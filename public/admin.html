@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - MEXI EVENTS</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <header>
+        <h1>MEXI EVENTS - Admin</h1>
+        <a href="/">Ver sitio</a>
+    </header>
+
+    <main>
+        <section class="form-section">
+            <h2 id="form-title">Agregar Evento</h2>
+            <form id="event-form">
+                <input type="hidden" id="event-id">
+
+                <label for="state">Estado</label>
+                <select id="state" required>
+                    <option value="">Selecciona un estado</option>
+                    <option value="Aguascalientes">Aguascalientes</option>
+                    <option value="Baja California">Baja California</option>
+                    <option value="Baja California Sur">Baja California Sur</option>
+                    <option value="Campeche">Campeche</option>
+                    <option value="Chiapas">Chiapas</option>
+                    <option value="Chihuahua">Chihuahua</option>
+                    <option value="Coahuila">Coahuila</option>
+                    <option value="Colima">Colima</option>
+                    <option value="Durango">Durango</option>
+                    <option value="Guanajuato">Guanajuato</option>
+                    <option value="Guerrero">Guerrero</option>
+                    <option value="Hidalgo">Hidalgo</option>
+                    <option value="Jalisco">Jalisco</option>
+                    <option value="Mexico City">Mexico City</option>
+                    <option value="Michoacán">Michoacán</option>
+                    <option value="Morelos">Morelos</option>
+                    <option value="México">México</option>
+                    <option value="Nayarit">Nayarit</option>
+                    <option value="Nuevo León">Nuevo León</option>
+                    <option value="Oaxaca">Oaxaca</option>
+                    <option value="Puebla">Puebla</option>
+                    <option value="Querétaro">Querétaro</option>
+                    <option value="Quintana Roo">Quintana Roo</option>
+                    <option value="San Luis Potosí">San Luis Potosí</option>
+                    <option value="Sinaloa">Sinaloa</option>
+                    <option value="Sonora">Sonora</option>
+                    <option value="Tabasco">Tabasco</option>
+                    <option value="Tamaulipas">Tamaulipas</option>
+                    <option value="Tlaxcala">Tlaxcala</option>
+                    <option value="Veracruz">Veracruz</option>
+                    <option value="Yucatán">Yucatán</option>
+                    <option value="Zacatecas">Zacatecas</option>
+                </select>
+
+                <label for="title">Titulo</label>
+                <input type="text" id="title" required placeholder="Nombre del evento">
+
+                <label for="description">Descripcion</label>
+                <textarea id="description" rows="3" required placeholder="Descripcion del evento"></textarea>
+
+                <label for="date">Fecha</label>
+                <input type="date" id="date" required>
+
+                <label for="location">Ubicacion</label>
+                <input type="text" id="location" required placeholder="Lugar del evento">
+
+                <label for="category">Categoria</label>
+                <select id="category" required>
+                    <option value="concierto">Concierto</option>
+                    <option value="expo">Expo</option>
+                    <option value="feria">Feria</option>
+                    <option value="museo">Museo</option>
+                    <option value="festival">Festival</option>
+                    <option value="teatro">Teatro</option>
+                    <option value="deportes">Deportes</option>
+                    <option value="otro">Otro</option>
+                </select>
+
+                <label for="image">Imagen</label>
+                <input type="file" id="image" accept="image/*">
+
+                <div class="form-buttons">
+                    <button type="submit">Guardar</button>
+                    <button type="button" id="cancel-btn" style="display:none">Cancelar</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="events-table-section">
+            <h2>Todos los Eventos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Estado</th>
+                        <th>Titulo</th>
+                        <th>Fecha</th>
+                        <th>Categoria</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="events-tbody"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="/js/admin.js"></script>
+</body>
+</html>

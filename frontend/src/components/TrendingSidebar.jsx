@@ -10,10 +10,31 @@ export default function TrendingSidebar({ onEventClick }) {
     useEffect(() => {
         const fetchTrending = () => {
             fetch('http://localhost:8000/mexi-events/api/get_trending.php')
-                .then(res => res.json())
+                .then(async res => {
+                    let text = await res.text();
+                    
+                    // Extract JSON if mixed with HTML/text (like PHP notices)
+                    const jsonStartIndex = text.indexOf('{');
+                    if (jsonStartIndex !== -1) {
+                        text = text.substring(jsonStartIndex);
+                    }
+
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error("Trending fetch error: Invalid JSON", text);
+                        return { data: [] };
+                    }
+                })
                 .then(data => {
                     setTrendingEvents(data.data || []);
                     setLoading(false);
+                    // Auto-open if we have events and it's the first load
+                    if (data.data && data.data.length > 0 && !isVisible) {
+                        // Optional: setIsVisible(true); 
+                        // Actually, let's keep it closed by default to not annoy, 
+                        // but maybe show a badge? The current UI has a button.
+                    }
                 })
                 .catch(err => {
                     console.error("Error fetching trending events:", err);

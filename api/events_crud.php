@@ -4,19 +4,27 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+// --- AUTHENTICATION CHECK ---
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Handle preflight OPTIONS request first
+if ($method === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-require_once __DIR__ . '/../includes/conexion.php';
-
-// --- AUTHENTICATION CHECK ---
-$method = $_SERVER['REQUEST_METHOD'];
-
 // Allow GET without auth (public map)
 if ($method !== 'GET') {
-    $headers = getallheaders();
+        require_once __DIR__ . '/../includes/conexion.php';
+
+        // Check if database connection failed
+        if (!isset($pdo)) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Database connection failed']);
+            exit;
+        }
+
+        $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? '';
     $token = str_replace('Bearer ', '', $authHeader);
 
@@ -47,6 +55,7 @@ if ($method !== 'GET') {
 
 switch ($method) {
     case 'GET':
+        require_once __DIR__ . '/../includes/conexion.php';
         handleGet($pdo);
         break;
     case 'POST':
@@ -153,8 +162,17 @@ function handlePut($pdo) {
 }
 
 function handleDelete($pdo) {
-    $data = json_decode(file_get_contents("php://input"), true);
-    $id = $_GET['id'] ?? $data['id'] ?? null;
+    // Try to get ID from multiple sources
+    $id = $_GET['id'] ?? null;
+    
+    // If not in URL, try JSON body
+    if (!$id) {
+        $input = file_get_contents("php://input");
+        if ($input) {
+            $data = json_decode($input, true);
+            $id = $data['id'] ?? null;
+        }
+    }
 
     if (!$id) {
         http_response_code(400);
@@ -163,14 +181,31 @@ function handleDelete($pdo) {
     }
 
     try {
+        // First check if event exists
+        $stmt = $pdo->prepare("SELECT id FROM mexico_events WHERE id = :id");
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        if (!$stmt->fetch()) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Event not found']);
+            return;
+        }
+
+        // Delete related records first if foreign keys don't cascade automatically
+        // (Optional: depending on your DB schema constraints)
+        $pdo->prepare("DELETE FROM event_likes WHERE event_id = :id")->execute([':id' => $id]);
+        $pdo->prepare("DELETE FROM event_ratings WHERE event_id = :id")->execute([':id' => $id]);
+        $pdo->prepare("DELETE FROM comments WHERE event_id = :id")->execute([':id' => $id]);
+
         $stmt = $pdo->prepare("DELETE FROM mexico_events WHERE id = :id");
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
         
-        echo json_encode(['message' => 'Event deleted successfully']);
+        echo json_encode(['success' => true, 'message' => 'Event deleted successfully']);
     } catch (PDOException $e) {
         http_response_code(500);
-        echo json_encode(['error' => $e->getMessage()]);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }
 }
 

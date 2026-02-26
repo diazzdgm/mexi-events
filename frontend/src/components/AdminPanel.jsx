@@ -7,6 +7,7 @@ export default function AdminPanel({ onBack }) {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingEvent, setEditingEvent] = useState(null);
+    const [deleteConfirmation, setDeleteConfirmation] = useState(null); // { id: 123 }
     const [isAdding, setIsAdding] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -35,7 +36,7 @@ export default function AdminPanel({ onBack }) {
         // But get_events.php is per state.
         // Let's assume events_crud.php will be updated or we fetch stats separately?
         // Actually, for simplicity, I'll update events_crud.php to include stats in the GET list.
-        fetch('http://localhost/mexi-events/api/events_crud.php')
+        fetch('http://localhost:8000/mexi-events/api/events_crud.php')
             .then(res => res.json())
             .then(data => {
                 setEvents(data.data || []);
@@ -92,6 +93,13 @@ export default function AdminPanel({ onBack }) {
     };
 
     const handleFile = (file) => {
+        // Clear previous errors
+        setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.image_url;
+            return newErrors;
+        });
+
         const formData = new FormData();
         formData.append('file', file);
 
@@ -101,39 +109,89 @@ export default function AdminPanel({ onBack }) {
             setUploadProgress(prev => Math.min(prev + 10, 90));
         }, 100);
 
-        fetch('http://localhost/mexi-events/api/upload.php', {
+        fetch('http://localhost:8000/mexi-events/api/upload.php', {
             method: 'POST',
             body: formData
         })
-        .then(res => res.json())
+        .then(async res => {
+            // Read raw text
+            let text = await res.text();
+            
+            // Extract JSON if mixed with HTML/text
+            const jsonStartIndex = text.indexOf('{');
+            if (jsonStartIndex !== -1) {
+                text = text.substring(jsonStartIndex);
+            }
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error("Failed to parse JSON. Raw text was:", text);
+                throw new Error('Server returned invalid JSON response');
+            }
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Upload failed');
+            }
+
+            return data;
+        })
         .then(data => {
             clearInterval(interval);
             setUploadProgress(100);
-            if (data.success) {
-                setFormData(prev => ({ ...prev, image_url: data.url }));
-                setTimeout(() => setUploadProgress(0), 1000);
-            } else {
-                alert('Upload failed: ' + data.error);
-                setUploadProgress(0);
-            }
+            
+            // Update state with the URL
+            setFormData(prev => ({ ...prev, image_url: data.url }));
+            
+            // Clear progress
+            setTimeout(() => setUploadProgress(0), 1000);
         })
         .catch(err => {
             clearInterval(interval);
-            alert('Upload error');
             setUploadProgress(0);
+            console.error("Upload error:", err);
+            // Show error in UI instead of alert
+            setErrors(prev => ({ ...prev, image_url: err.message }));
         });
     };
 
     // --- CRUD ---
-    const handleDelete = (id) => {
-        if (!window.confirm('Are you sure you want to delete this event?')) return;
+    const handleDeleteClick = (e, id) => {
+        e.stopPropagation();
+        setDeleteConfirmation({ id });
+    };
 
-        fetch(`http://localhost/mexi-events/api/events_crud.php?id=${id}`, {
-            method: 'DELETE'
+    const confirmDelete = () => {
+        if (!deleteConfirmation) return;
+        const id = deleteConfirmation.id;
+
+        // Retrieve token
+        const token = localStorage.getItem('mexi_token');
+        if (!token) {
+            alert("You must be logged in as admin to delete events.");
+            setDeleteConfirmation(null);
+            return;
+        }
+
+        fetch(`http://localhost:8000/mexi-events/api/events_crud.php?id=${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         })
         .then(res => res.json())
-        .then(() => {
-            fetchEvents();
+        .then((data) => {
+            if (data.success) {
+                fetchEvents();
+                setDeleteConfirmation(null);
+            } else {
+                alert('Failed to delete event: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Error deleting event');
         });
     };
 
@@ -173,19 +231,37 @@ export default function AdminPanel({ onBack }) {
             return;
         }
 
+        // Retrieve token
+        const token = localStorage.getItem('mexi_token');
+        if (!token) {
+            alert("You must be logged in as admin to modify events.");
+            return;
+        }
+
         const method = isAdding ? 'POST' : 'PUT';
         const body = isAdding ? formData : { ...formData, id: editingEvent.id };
 
-        fetch('http://localhost/mexi-events/api/events_crud.php', {
+        fetch('http://localhost:8000/mexi-events/api/events_crud.php', {
             method: method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify(body)
         })
         .then(res => res.json())
-        .then(() => {
-            setIsAdding(false);
-            setEditingEvent(null);
-            fetchEvents();
+        .then((data) => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                setIsAdding(false);
+                setEditingEvent(null);
+                fetchEvents();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Request failed');
         });
     };
 
@@ -322,8 +398,21 @@ export default function AdminPanel({ onBack }) {
 
                             {/* Right Column: Upload & Preview */}
                             <div className="space-y-4">
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Media (Image/Video)</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-1 flex justify-between">
+                                    Media (Image/Video)
+                                    {errors.image_url && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12}/> {errors.image_url}</span>}
+                                </label>
                                 
+                                {/* URL Input */}
+                                <input 
+                                    type="text" 
+                                    name="image_url"
+                                    value={formData.image_url}
+                                    onChange={handleInputChange}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-mexi-pink text-sm mb-2"
+                                    placeholder="Paste URL or upload file below..."
+                                />
+
                                 {/* Drag & Drop Area */}
                                 <div 
                                     className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-all h-48 cursor-pointer ${dragActive ? 'border-mexi-pink bg-mexi-pink/10' : 'border-slate-600 bg-slate-900 hover:border-slate-500'}`}
@@ -469,7 +558,7 @@ export default function AdminPanel({ onBack }) {
                                                     <button onClick={() => handleEdit(event)} className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors" title="Edit">
                                                         <Edit size={18} />
                                                     </button>
-                                                    <button onClick={() => handleDelete(event.id)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors" title="Delete">
+                                                    <button onClick={(e) => handleDeleteClick(e, event.id)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors" title="Delete">
                                                         <Trash2 size={18} />
                                                     </button>
                                                 </div>
@@ -533,6 +622,50 @@ export default function AdminPanel({ onBack }) {
                         )}
                     </div>
                 )}
+                {/* Delete Confirmation Modal */}
+                <AnimatePresence>
+                    {deleteConfirmation && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                                onClick={() => setDeleteConfirmation(null)}
+                            />
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-slate-800 rounded-xl p-6 shadow-2xl border border-slate-700 w-full max-w-sm relative z-10"
+                            >
+                                <div className="flex flex-col items-center text-center gap-4">
+                                    <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                                        <AlertCircle size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white mb-2">Delete Event?</h3>
+                                        <p className="text-gray-400">Are you sure you want to delete this event? This action cannot be undone.</p>
+                                    </div>
+                                    <div className="flex gap-3 w-full mt-2">
+                                        <button 
+                                            onClick={() => setDeleteConfirmation(null)}
+                                            className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            onClick={confirmDelete}
+                                            className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold transition-colors"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
             </main>
         </div>
     );

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import StarRating from './StarRating';
 import { SoundManager } from '../utils/SoundManager';
 
-export default function EventCard({ event, position, visible, loading, error, onMouseEnter, onMouseLeave, onClose, isLocked }) {
+export default function EventCard({ event, position, visible, loading, error, onMouseEnter, onMouseLeave, onClose, isLocked, forceExpand }) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
     const [comments, setComments] = useState([]);
@@ -23,6 +23,14 @@ export default function EventCard({ event, position, visible, loading, error, on
     const eventsList = Array.isArray(event) ? event : (event ? [event] : []);
     const currentEvent = eventsList[currentIndex];
 
+    // Reset index when event data changes significantly (e.g. switching context)
+    // We check if the current event is still valid in the new list, if not reset to 0
+    useEffect(() => {
+        if (currentIndex >= eventsList.length) {
+            setCurrentIndex(0);
+        }
+    }, [eventsList, currentIndex]);
+
     useEffect(() => {
         const storedUser = localStorage.getItem('mexi_user');
         if (storedUser) setUser(JSON.parse(storedUser));
@@ -38,6 +46,13 @@ export default function EventCard({ event, position, visible, loading, error, on
             setUserRating(currentEvent.user_rating || 0);
         }
     }, [currentEvent]);
+
+    // Force expand if prop is true
+    useEffect(() => {
+        if (forceExpand && currentEvent) {
+            setIsExpanded(true);
+        }
+    }, [forceExpand, currentEvent]);
 
     useEffect(() => {
         if (isExpanded && currentEvent) {

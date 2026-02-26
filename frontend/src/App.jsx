@@ -26,6 +26,8 @@ function App() {
   const [showRangeWarning, setShowRangeWarning] = useState(false);
   const [showNearMePopup, setShowNearMePopup] = useState(false);
   
+  const [forceExpand, setForceExpand] = useState(false);
+  
   // Use ref for timeout to ensure synchronous access across closures
   const hideTimeoutRef = useRef(null);
 
@@ -166,10 +168,12 @@ function App() {
       
       // Center card
       setCardPosition({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
+      setForceExpand(true);
   };
 
   const fetchEvents = (stateName) => {
     setLoading(true);
+    setForceExpand(false);
     setError(null);
     setEventData(null);
     
@@ -479,6 +483,7 @@ function App() {
                     onMouseLeave={handleCardLeave}
                     onClose={handleCloseCard}
                     isLocked={!!selectedState}
+                    forceExpand={forceExpand}
                 />
             )}
           </motion.div>

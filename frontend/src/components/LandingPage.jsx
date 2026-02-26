@@ -5,6 +5,7 @@ import { MapPin, Calendar, ArrowRight, X } from 'lucide-react';
 export default function LandingPage({ onExplore, onSelectState }) {
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const videoRef = React.useRef(null);
 
   useEffect(() => {
     // Ideally fetch from an endpoint like /api/get_featured_events.php
@@ -30,8 +31,26 @@ export default function LandingPage({ onExplore, onSelectState }) {
     <div className="w-full min-h-screen bg-mexi-dark text-white overflow-y-auto">
       {/* Hero Section */}
       <section className="relative h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1518182170546-0766ba6f9285?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center"></div>
-        <div className="absolute inset-0 z-0 bg-gradient-to-b from-transparent via-mexi-dark/80 to-mexi-dark"></div>
+        {/* Background Video */}
+        <div className="absolute inset-0 z-0">
+          <video 
+            ref={videoRef}
+            autoPlay 
+            loop 
+            muted 
+            playsInline
+            onLoadedMetadata={() => {
+                if (videoRef.current) {
+                    videoRef.current.currentTime = 3;
+                }
+            }}
+            className="w-full h-full object-cover opacity-40"
+          >
+            <source src="/assets/background-video.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-b from-mexi-dark/30 via-mexi-dark/60 to-mexi-dark"></div>
+        </div>
         
         <motion.div 
           initial={{ opacity: 0, y: 50 }}

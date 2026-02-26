@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Edit, Plus, X, Save, Upload, Video, Image as ImageIcon, CheckCircle, AlertCircle, Eye, Heart, Star } from 'lucide-react';
+import { MEXICO_STATES } from '../data/states';
 
 export default function AdminPanel({ onBack }) {
     const [events, setEvents] = useState([]);
@@ -262,14 +263,19 @@ export default function AdminPanel({ onBack }) {
                                         State Name
                                         {errors.state_name && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12}/> {errors.state_name}</span>}
                                     </label>
-                                    <input 
-                                        type="text" 
+                                    <select 
                                         name="state_name"
                                         value={formData.state_name}
                                         onChange={handleInputChange}
-                                        className={`w-full bg-slate-900 border rounded-lg p-3 text-white focus:outline-none transition-colors ${errors.state_name ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-mexi-pink'}`}
-                                        placeholder="e.g. Oaxaca"
-                                    />
+                                        className={`w-full bg-slate-900 border rounded-lg p-3 text-white focus:outline-none transition-colors appearance-none cursor-pointer ${errors.state_name ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-mexi-pink'}`}
+                                    >
+                                        <option value="">Select a state...</option>
+                                        {MEXICO_STATES.map(state => (
+                                            <option key={state.id} value={state.name}>
+                                                {state.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div className="group">

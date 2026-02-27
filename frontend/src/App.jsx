@@ -243,19 +243,20 @@ function App() {
   const handleStateHover = (stateName, e) => {
     if (selectedState) return;
 
-    // Only play sound if it's a new state
-    if (hoveredState !== stateName) {
-        SoundManager.play('hover');
-    }
-
     if (hideTimeoutRef.current) {
         clearTimeout(hideTimeoutRef.current);
         hideTimeoutRef.current = null;
     }
 
-    setHoveredState(stateName);
+    // Update position on every move
     setCardPosition({ x: e.clientX, y: e.clientY });
-    fetchEvents(stateName);
+
+    // Only update state and fetch if changed
+    if (hoveredState !== stateName) {
+        SoundManager.play('hover');
+        setHoveredState(stateName);
+        fetchEvents(stateName);
+    }
   };
 
   const handleStateClick = (stateName, e) => {

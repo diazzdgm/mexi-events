@@ -21,8 +21,6 @@ export default function StarRating({ rating, onRate, readonly = false, size = 20
     const renderStar = (index) => {
         const value = index + 1;
         const currentRating = hoverRating || rating || 0;
-        
-        // Interaction Logic
         const isInteractive = !readonly;
         const starProps = {
             size,
@@ -30,10 +28,7 @@ export default function StarRating({ rating, onRate, readonly = false, size = 20
             onMouseEnter: () => handleMouseEnter(value),
             onClick: () => handleClick(value)
         };
-
-        // Render Logic
         if (currentRating >= value) {
-            // Full Star
             return (
                 <Star 
                     key={index} 
@@ -42,7 +37,6 @@ export default function StarRating({ rating, onRate, readonly = false, size = 20
                 />
             );
         } else if (currentRating >= value - 0.5 && readonly) {
-            // Half Star (only in readonly mode usually, unless we support half-star input)
             return (
                 <div key={index} className="relative inline-block" {...starProps}>
                     <Star 
@@ -56,7 +50,6 @@ export default function StarRating({ rating, onRate, readonly = false, size = 20
                 </div>
             );
         } else {
-            // Empty Star
             return (
                 <Star 
                     key={index} 

@@ -46,8 +46,6 @@ const upload = multer({
 
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'public')))
-
-// Auth endpoints
 app.post('/api/register', (req, res) => {
     const { username, password } = req.body
     if (!username || !password) return res.json({ success: false, error: 'Faltan datos' })
@@ -80,8 +78,6 @@ app.post('/api/geolocation', (req, res) => {
     db.prepare('UPDATE users SET country_code = ?, state_id = ? WHERE id = ?').run(country_code, state_id, user.id)
     res.json({ success: true })
 })
-
-// Events
 app.get('/api/events/:state', (req, res) => {
     const state = decodeURIComponent(req.params.state)
     const stmt = db.prepare(`
@@ -145,8 +141,6 @@ app.delete('/api/admin/events/:id', (req, res) => {
     db.prepare('DELETE FROM events WHERE id = ?').run(req.params.id)
     res.json({ deleted: true })
 })
-
-// Importación masiva desde carpetas de estados
 const assetsDir = path.join(__dirname, 'assets de los eventos')
 
 app.post('/api/admin/bulk-import', (req, res) => {

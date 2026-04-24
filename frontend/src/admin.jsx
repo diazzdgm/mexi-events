@@ -17,12 +17,10 @@ const AdminApp = () => {
             if (parsedUser.role === 'admin') {
                 setUser(parsedUser);
             } else {
-                // Not admin
                 alert('Access Denied: You must be an administrator.');
                 window.location.href = '/';
             }
         } else {
-            // Not logged in
             window.location.href = '/';
         }
         setLoading(false);

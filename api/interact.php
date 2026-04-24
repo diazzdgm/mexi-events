@@ -10,8 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../includes/conexion.php';
-
-// --- AUTHENTICATION ---
 $headers = function_exists('getallheaders') ? getallheaders() : [];
 $authHeader = $headers['Authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
 $token = str_replace('Bearer ', '', $authHeader);
@@ -39,7 +37,6 @@ try {
     echo json_encode(['error' => 'Auth check failed']);
     exit;
 }
-// ---------------------
 
 $data = json_decode(file_get_contents("php://input"), true);
 $action = $data['action'] ?? '';
@@ -53,24 +50,19 @@ if (!$eventId) {
 
 try {
     if ($action === 'like') {
-        // Check if already liked
         $stmt = $pdo->prepare("SELECT id FROM event_likes WHERE user_id = ? AND event_id = ?");
         $stmt->execute([$userId, $eventId]);
         $exists = $stmt->fetch();
 
         if ($exists) {
-            // Unlike
             $stmt = $pdo->prepare("DELETE FROM event_likes WHERE user_id = ? AND event_id = ?");
             $stmt->execute([$userId, $eventId]);
             $liked = false;
         } else {
-            // Like
             $stmt = $pdo->prepare("INSERT INTO event_likes (user_id, event_id) VALUES (?, ?)");
             $stmt->execute([$userId, $eventId]);
             $liked = true;
         }
-
-        // Get new count
         $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM event_likes WHERE event_id = ?");
         $stmt->execute([$eventId]);
         $count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
@@ -84,12 +76,8 @@ try {
             echo json_encode(['error' => 'Valid rating (1-5) required']);
             exit;
         }
-
-        // Insert or Update
         $stmt = $pdo->prepare("INSERT INTO event_ratings (user_id, event_id, rating) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE rating = VALUES(rating)");
         $stmt->execute([$userId, $eventId, $rating]);
-
-        // Get new stats
         $stmt = $pdo->prepare("SELECT COUNT(*) as count, AVG(rating) as avg FROM event_ratings WHERE event_id = ?");
         $stmt->execute([$eventId]);
         $stats = $stmt->fetch(PDO::FETCH_ASSOC);

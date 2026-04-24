@@ -20,11 +20,7 @@ export default function TrendingSidebar({ onEventClick }) {
                 .then(data => {
                     setTrendingEvents(data.data || []);
                     setLoading(false);
-                    // Auto-open if we have events and it's the first load
                     if (data.data && data.data.length > 0 && !isVisible) {
-                        // Optional: setIsVisible(true); 
-                        // Actually, let's keep it closed by default to not annoy, 
-                        // but maybe show a badge? The current UI has a button.
                     }
                 })
                 .catch(err => {
@@ -34,7 +30,6 @@ export default function TrendingSidebar({ onEventClick }) {
         };
 
         fetchTrending();
-        // Refresh every 30 seconds for "real-time" feel
         const interval = setInterval(fetchTrending, 30000);
         return () => clearInterval(interval);
     }, []);
@@ -79,7 +74,6 @@ export default function TrendingSidebar({ onEventClick }) {
                                         className="bg-slate-800/50 rounded-xl p-3 cursor-pointer border border-transparent hover:border-mexi-pink/30 transition-all group"
                                     >
                                         <div className="flex gap-3">
-                                            {/* Thumbnail */}
                                             <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-700 relative">
                                                 {event.image_url && event.image_url.match(/\.(mp4|webm)$/i) ? (
                                                     <video src={event.image_url} className="w-full h-full object-cover" />
@@ -94,8 +88,6 @@ export default function TrendingSidebar({ onEventClick }) {
                                                     #{index + 1}
                                                 </div>
                                             </div>
-
-                                            {/* Info */}
                                             <div className="flex flex-col justify-between flex-1 min-w-0">
                                                 <div>
                                                     <h4 className="text-white font-semibold text-sm truncate group-hover:text-mexi-pink transition-colors">

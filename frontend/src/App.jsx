@@ -12,7 +12,7 @@ import { SoundManager } from './utils/SoundManager';
 import TrendingSidebar from './components/TrendingSidebar';
 
 function App() {
-  const [view, setView] = useState('landing'); // 'landing' | 'map'
+  const [view, setView] = useState('landing');
   const [hoveredState, setHoveredState] = useState(null);
   const [selectedState, setSelectedState] = useState(null);
   const [eventData, setEventData] = useState(null);
@@ -25,21 +25,16 @@ function App() {
   const { location } = useGeolocation();
   const [showRangeWarning, setShowRangeWarning] = useState(false);
   const [showNearMePopup, setShowNearMePopup] = useState(false);
-  
+
   const [forceExpand, setForceExpand] = useState(false);
-  
-  // Use ref for timeout to ensure synchronous access across closures
+
   const hideTimeoutRef = useRef(null);
   const geoAutoSelectDoneRef = useRef(false);
 
   useEffect(() => {
     if (location && location.is_mexico === false) {
-        // If user is logged in and has manually set their location to Mexico, don't show warning
         if (user && user.country_code === 'MX') return;
-        
-        // Check if we already showed it this session? 
-        // For now, let's show it, user can close it.
-        // Maybe we want to persist the dismissal?
+
         const warningDismissed = sessionStorage.getItem('mexi_warning_dismissed');
         if (!warningDismissed) {
             setShowRangeWarning(true);
@@ -47,7 +42,6 @@ function App() {
     }
   }, [location, user]);
 
-  // Auto-seleccionar el estado del usuario al entrar al mapa
   useEffect(() => {
     if (
       view !== 'map' ||
@@ -71,7 +65,6 @@ function App() {
     setTimeout(() => setShowNearMePopup(false), 4000);
   }, [view, location]);
 
-  // Cuando la ubicación GPS se detecta y el usuario ya está logueado, guardar su estado
   useEffect(() => {
     if (location?.state_id && user && !user.state_id) {
       const updatedUser = { ...user, state_id: location.state_id, country_code: location.country_code || 'MX' };
@@ -86,18 +79,15 @@ function App() {
     }
   }, [location, user]);
 
-  // Deep linking logic
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const stateParam = params.get('state');
-    
-    // Check login status
+
     const storedUser = localStorage.getItem('mexi_user');
     if (storedUser) {
         setUser(JSON.parse(storedUser));
     }
 
-    // Only allow auto-nav to map if user is logged in
     if (stateParam) {
       if (storedUser) {
           setView('map');
@@ -105,9 +95,6 @@ function App() {
           setCardPosition({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
           fetchEvents(stateParam);
       } else {
-          // If not logged in but tries to deep link, show login
-          // Remove param to prevent loop or confusion? 
-          // Or keep it and nav after login? Let's just show login on landing.
           setShowLogin(true);
       }
     }
@@ -135,7 +122,6 @@ function App() {
   const handleLoginSuccess = (userData, isNewUser = false) => {
       SoundManager.play('success');
 
-      // Si el usuario no tiene estado guardado pero GPS ya lo detectó, guardarlo
       if (!userData.state_id && location?.state_id) {
           userData.state_id = location.state_id;
           userData.country_code = location.country_code || 'MX';
@@ -166,8 +152,8 @@ function App() {
       localStorage.removeItem('mexi_user');
       localStorage.removeItem('mexi_token');
       setUser(null);
-      setView('landing'); // Force back to landing
-      window.location.href = '/'; // Refresh to clear state
+      setView('landing');
+      window.location.href = '/';
   };
 
   const handleSelectStateFromLanding = (stateName) => {
@@ -177,7 +163,7 @@ function App() {
         setSelectedState(stateName);
         setCardPosition({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
         fetchEvents(stateName);
-        
+
         const url = new URL(window.location);
         url.searchParams.set('state', stateName);
         window.history.pushState({}, '', url);
@@ -201,24 +187,18 @@ function App() {
   const handleTrendingClick = (event) => {
       SoundManager.play('click');
       setView('map');
-      
-      // Simulate selection logic without state hovering
-      // We set the selectedState to the event's state to highlight it
-      // And we set the eventData to just this event
-      
+
       const stateName = event.state_name || event.state;
       const stateObj = MEXICO_STATES.find(s => s.name.toLowerCase() === (stateName || '').toLowerCase());
       if (stateObj) {
-          setSelectedState(stateObj.name); // Highlight map
+          setSelectedState(stateObj.name);
       } else {
           setSelectedState(null);
       }
 
-      // Override standard fetch with this specific event
       setEventData(event);
-      setHoveredState(stateName); // Trigger card appearance
-      
-      // Center card
+      setHoveredState(stateName);
+
       setCardPosition({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
       setForceExpand(true);
   };
@@ -228,9 +208,7 @@ function App() {
     setForceExpand(false);
     setError(null);
     setEventData(null);
-    
-    // We should probably send the token here too if we want to protect the READ API
-    // But currently the READ API is public.
+
     const token = localStorage.getItem('mexi_token');
     const headers = {};
     if (token) {
@@ -247,7 +225,6 @@ function App() {
         } else if (data.message) {
           setError(data.message);
         } else if (data.data) {
-          // Store ALL events, not just the first one
           setEventData(data.data);
         } else {
           setError("No hay eventos próximos en este estado");
@@ -266,25 +243,21 @@ function App() {
       if (updatedUser.country_code === 'MX') {
           setShowRangeWarning(false);
       }
-      
-      // If user selected a state, auto-navigate to map and select it
+
       if (updatedUser.state_id) {
           const stateObj = MEXICO_STATES.find(s => s.id === updatedUser.state_id);
           if (stateObj) {
               const stateName = stateObj.name;
               setView('map');
-              
-              // Simulate selection
+
               setSelectedState(stateName);
-              setHoveredState(stateName); // To show card
+              setHoveredState(stateName);
               setCardPosition({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
               fetchEvents(stateName);
-              
-              // Show "Near You" popup
+
               setShowNearMePopup(true);
               SoundManager.play('success');
-              
-              // Hide popup after 4 seconds
+
               setTimeout(() => {
                   setShowNearMePopup(false);
               }, 4000);
@@ -300,10 +273,8 @@ function App() {
         hideTimeoutRef.current = null;
     }
 
-    // Update position on every move
     setCardPosition({ x: e.clientX, y: e.clientY });
 
-    // Only update state and fetch if changed
     if (hoveredState !== stateName) {
         SoundManager.play('hover');
         setHoveredState(stateName);
@@ -337,7 +308,6 @@ function App() {
   const handleStateLeave = () => {
     if (selectedState) return;
 
-    // Clear any existing timeout first to be safe
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
 
     hideTimeoutRef.current = setTimeout(() => {
@@ -357,7 +327,7 @@ function App() {
     if (selectedState) return;
 
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    
+
     hideTimeoutRef.current = setTimeout(() => {
       setHoveredState(null);
       setEventData(null);
@@ -371,10 +341,10 @@ function App() {
               <Login onLogin={handleLoginSuccess} onCancel={() => { SoundManager.play('pop'); setShowLogin(false); }} />
           )}
           {showProfile && (
-              <UserProfile 
-                  user={user} 
-                  onClose={() => setShowProfile(false)} 
-                  onUpdate={handleUpdateUser} 
+              <UserProfile
+                  user={user}
+                  onClose={() => setShowProfile(false)}
+                  onUpdate={handleUpdateUser}
               />
           )}
           {showRangeWarning && (
@@ -391,7 +361,7 @@ function App() {
                   <p className="font-medium text-sm sm:text-base text-center max-w-2xl">
                       It looks like you're far from our current events! You can still browse, but local features are optimized for Mexico.
                   </p>
-                  <button 
+                  <button
                       onClick={() => {
                           SoundManager.play('click');
                           setShowRangeWarning(false);
@@ -418,7 +388,7 @@ function App() {
                       <h4 className="font-bold text-lg leading-tight">Estás aquí</h4>
                       <p className="text-sm font-medium opacity-90">{selectedState}</p>
                   </div>
-                  <button 
+                  <button
                       onClick={() => setShowNearMePopup(false)}
                       className="absolute top-1 right-1 p-1 hover:bg-white/20 rounded-full transition-colors"
                   >
@@ -439,12 +409,11 @@ function App() {
             className="absolute inset-0 z-10"
           >
             <LandingPage onExplore={handleExplore} onSelectState={handleSelectStateFromLanding} />
-            
-            {/* User Controls */}
+
             <div className="fixed bottom-8 left-8 flex gap-4 z-50">
                 {user ? (
                     <>
-                        <div 
+                        <div
                             onClick={() => setShowProfile(true)}
                             className="bg-slate-800/80 backdrop-blur text-white px-4 py-3 rounded-full flex items-center gap-2 border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors"
                         >
@@ -452,9 +421,9 @@ function App() {
                             <span className="font-semibold">{user.username}</span>
                             <span className="text-xs bg-slate-700 px-2 py-0.5 rounded uppercase">{user.role}</span>
                         </div>
-                        
+
                         {user.role === 'admin' && (
-                            <button 
+                            <button
                                 onClick={handleAdmin}
                                 onMouseEnter={() => SoundManager.play('hover')}
                                 className="p-3 bg-slate-800/80 hover:bg-slate-700 text-gray-400 hover:text-white rounded-full transition-all border border-slate-700"
@@ -463,8 +432,8 @@ function App() {
                                 <Settings size={20} />
                             </button>
                         )}
-                        
-                        <button 
+
+                        <button
                             onClick={handleLogout}
                             onMouseEnter={() => SoundManager.play('hover')}
                             className="p-3 bg-red-900/50 hover:bg-red-900/80 text-red-200 hover:text-white rounded-full transition-all border border-red-900/50"
@@ -474,7 +443,7 @@ function App() {
                         </button>
                     </>
                 ) : (
-                    <button 
+                    <button
                         onClick={handleLoginClick}
                         onMouseEnter={() => SoundManager.play('hover')}
                         className="bg-slate-800/80 hover:bg-slate-700 text-white px-6 py-3 rounded-full font-semibold transition-all border border-slate-700 hover:border-mexi-pink shadow-lg"
@@ -495,7 +464,7 @@ function App() {
           >
             <header className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
                 <div className="pointer-events-auto">
-                    <motion.button 
+                    <motion.button
                         onClick={handleBackToLanding}
                         onMouseEnter={() => SoundManager.play('hover')}
                         whileHover={{ x: -5 }}
@@ -505,7 +474,7 @@ function App() {
                         <span className="font-semibold">Back to Home</span>
                     </motion.button>
                 </div>
-                
+
                 <div className="text-right pointer-events-auto">
                     <h1 className="text-4xl font-black text-white tracking-widest uppercase drop-shadow-lg opacity-20 hover:opacity-100 transition-opacity duration-500">
                         Mexi<span className="text-mexi-pink">Events</span>
@@ -516,21 +485,21 @@ function App() {
             <TrendingSidebar onEventClick={handleTrendingClick} />
 
             <div className="w-full h-full flex items-center justify-center p-4 md:p-10">
-                <MexicoMap 
-                  onHover={handleStateHover} 
+                <MexicoMap
+                  onHover={handleStateHover}
                   onLeave={handleStateLeave}
                   onClick={handleStateClick}
                   userStateId={user?.state_id || location?.state_id}
                 />
             </div>
-            
+
             {(hoveredState || selectedState) && (
-                <EventCard 
-                    key={hoveredState || selectedState} // Add key to force clean remount if state changes
-                    event={eventData} 
+                <EventCard
+                    key={hoveredState || selectedState}
+                    event={eventData}
                     position={cardPosition}
-                    visible={true} 
-                    loading={loading} 
+                    visible={true}
+                    loading={loading}
                     error={error}
                     onMouseEnter={handleCardEnter}
                     onMouseLeave={handleCardLeave}

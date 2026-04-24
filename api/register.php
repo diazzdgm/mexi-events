@@ -20,29 +20,21 @@ if (!$username || !$password) {
     echo json_encode(['error' => 'Username and password required']);
     exit;
 }
-
-// Validate Username Length
 if (strlen($username) < 3 || strlen($username) > 20) {
     http_response_code(400);
     echo json_encode(['error' => 'Username must be between 3 and 20 characters']);
     exit;
 }
-
-// Validate Username Characters (Alphanumeric + Underscore)
 if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
     http_response_code(400);
     echo json_encode(['error' => 'Username can only contain letters, numbers, and underscores']);
     exit;
 }
-
-// Validate Password Length
 if (strlen($password) < 6) {
     http_response_code(400);
     echo json_encode(['error' => 'Password must be at least 6 characters long']);
     exit;
 }
-
-// Check if user exists
 $stmt = $pdo->prepare("SELECT id FROM users WHERE username = :username");
 $stmt->execute([':username' => $username]);
 if ($stmt->fetch()) {
@@ -52,11 +44,7 @@ if ($stmt->fetch()) {
 }
 
 try {
-    // Hash password
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    
-    // Insert new user (default role is 'user')
-    // We use DEFAULT role, assuming users table has default 'user'
     $sql = "INSERT INTO users (username, password, role) VALUES (:username, :password, 'user')";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
@@ -65,8 +53,6 @@ try {
     ]);
     
     $user_id = $pdo->lastInsertId();
-    
-    // Auto-login (generate token)
     $token = bin2hex(random_bytes(32));
     $update = $pdo->prepare("UPDATE users SET api_token = :token WHERE id = :id");
     $update->execute([':token' => $token, ':id' => $user_id]);

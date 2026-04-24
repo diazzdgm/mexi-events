@@ -1,8 +1,5 @@
 <?php
-/**
- * Tercer evento por estado (para los 27 estados que solo tenían 2)
- * Ejecutar: php queries/seed_terceros_eventos.php
- */
+
 require_once __DIR__ . '/../includes/conexion.php';
 
 $events = [

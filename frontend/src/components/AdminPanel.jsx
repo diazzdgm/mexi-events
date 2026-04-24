@@ -33,12 +33,6 @@ export default function AdminPanel({ onBack }) {
 
     const fetchEvents = () => {
         setLoading(true);
-        // Admin needs to see all events, and CRUD API returns them.
-        // But CRUD API currently doesn't return stats (likes/ratings).
-        // I should probably update events_crud.php or just use get_events.php for the list view?
-        // But get_events.php is per state.
-        // Let's assume events_crud.php will be updated or we fetch stats separately?
-        // Actually, for simplicity, I'll update events_crud.php to include stats in the GET list.
         fetch(import.meta.env.VITE_API_URL + '/api/events_crud.php')
             .then(res => res.json())
             .then(data => {
@@ -50,8 +44,6 @@ export default function AdminPanel({ onBack }) {
                 setLoading(false);
             });
     };
-
-    // --- Validation ---
     const validateField = (name, value) => {
         let error = '';
         if (name === 'state_name' && !value.trim()) error = 'State name is required';
@@ -68,8 +60,6 @@ export default function AdminPanel({ onBack }) {
         setFormData(prev => ({ ...prev, [name]: value }));
         validateField(name, value);
     };
-
-    // --- File Upload ---
     const handleDrag = (e, targetField = 'image_url') => {
         e.preventDefault();
         e.stopPropagation();
@@ -100,8 +90,6 @@ export default function AdminPanel({ onBack }) {
     const handleFile = (file, targetField = 'image_url') => {
         const isAudio = targetField === 'audio_url';
         const progressSetter = isAudio ? setAudioUploadProgress : setUploadProgress;
-
-        // Clear previous errors for this field
         setErrors(prev => {
             const newErrors = { ...prev };
             delete newErrors[targetField];
@@ -110,8 +98,6 @@ export default function AdminPanel({ onBack }) {
 
         const body = new FormData();
         body.append('file', file);
-
-        // Simulate progress
         progressSetter(10);
         const interval = setInterval(() => {
             progressSetter(prev => Math.min(prev + 10, 90));
@@ -157,8 +143,6 @@ export default function AdminPanel({ onBack }) {
             setErrors(prev => ({ ...prev, [targetField]: err.message }));
         });
     };
-
-    // --- CRUD ---
     const handleDeleteClick = (e, id) => {
         e.stopPropagation();
         setDeleteConfirmation({ id });
@@ -167,8 +151,6 @@ export default function AdminPanel({ onBack }) {
     const confirmDelete = () => {
         if (!deleteConfirmation) return;
         const id = deleteConfirmation.id;
-
-        // Retrieve token
         const token = localStorage.getItem('mexi_token');
         if (!token) {
             alert("You must be logged in as admin to delete events.");
@@ -221,8 +203,6 @@ export default function AdminPanel({ onBack }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        // Validate all
         const newErrors = {};
         Object.keys(formData).forEach(key => {
             const err = validateField(key, formData[key]);
@@ -233,8 +213,6 @@ export default function AdminPanel({ onBack }) {
             setErrors(newErrors);
             return;
         }
-
-        // Retrieve token
         const token = localStorage.getItem('mexi_token');
         if (!token) {
             alert("You must be logged in as admin to modify events.");
@@ -266,8 +244,6 @@ export default function AdminPanel({ onBack }) {
             alert('Request failed');
         });
     };
-
-    // --- Carousel Logic ---
     const nextSlide = () => {
         setCarouselIndex((prev) => (prev + 1) % events.length);
     };
@@ -278,7 +254,6 @@ export default function AdminPanel({ onBack }) {
 
     return (
         <div className="min-h-screen bg-slate-900 text-white flex">
-            {/* Sidebar Navigation */}
             <aside className="w-64 bg-slate-800 border-r border-slate-700 p-6 flex flex-col fixed h-full z-20">
                 <h1 className="text-2xl font-bold text-mexi-pink mb-8">Admin Panel</h1>
                 
@@ -317,16 +292,12 @@ export default function AdminPanel({ onBack }) {
                     Back to Map
                 </button>
             </aside>
-
-            {/* Main Content */}
             <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
                 <header className="flex justify-between items-center mb-8">
                     <h2 className="text-3xl font-bold text-white">
                         {isAdding ? 'Create New Event' : editingEvent ? 'Edit Event' : viewMode === 'carousel' ? 'Destinations Preview' : 'Manage Events'}
                     </h2>
                 </header>
-
-                {/* Form Section */}
                 {(isAdding || editingEvent) && (
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
@@ -334,7 +305,6 @@ export default function AdminPanel({ onBack }) {
                         className="bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700 max-w-4xl mx-auto"
                     >
                         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Left Column: Inputs */}
                             <div className="space-y-4">
                                 <div className="group">
                                     <label className="block text-sm font-medium text-gray-400 mb-1 flex justify-between">
@@ -397,15 +367,11 @@ export default function AdminPanel({ onBack }) {
                                     />
                                 </div>
                             </div>
-
-                            {/* Right Column: Upload & Preview */}
                             <div className="space-y-4">
                                 <label className="block text-sm font-medium text-gray-400 mb-1 flex justify-between">
                                     Media (Image/Video)
                                     {errors.image_url && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12}/> {errors.image_url}</span>}
                                 </label>
-                                
-                                {/* URL Input */}
                                 <input 
                                     type="text" 
                                     name="image_url"
@@ -414,8 +380,6 @@ export default function AdminPanel({ onBack }) {
                                     className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-mexi-pink text-sm mb-2"
                                     placeholder="Paste URL or upload file below..."
                                 />
-
-                                {/* Drag & Drop Area (Media) */}
                                 <div
                                     className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-all h-48 cursor-pointer ${dragActiveMedia ? 'border-mexi-pink bg-mexi-pink/10' : 'border-slate-600 bg-slate-900 hover:border-slate-500'}`}
                                     onDragEnter={(e) => handleDrag(e, 'image_url')}
@@ -452,8 +416,6 @@ export default function AdminPanel({ onBack }) {
                                             <p className="text-xs text-gray-600 mt-2">Images or Videos (max 50MB)</p>
                                         </>
                                     )}
-
-                                    {/* Progress Bar */}
                                     {uploadProgress > 0 && uploadProgress < 100 && (
                                         <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-700">
                                             <div
@@ -463,8 +425,6 @@ export default function AdminPanel({ onBack }) {
                                         </div>
                                     )}
                                 </div>
-
-                                {/* --- Music/Audio Upload Section --- */}
                                 <label className="block text-sm font-medium text-gray-400 mb-1 mt-2 flex justify-between">
                                     Music/Audio (MP3)
                                     {errors.audio_url && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12}/> {errors.audio_url}</span>}
@@ -546,8 +506,6 @@ export default function AdminPanel({ onBack }) {
                                     />
                                 </div>
                             </div>
-
-                            {/* Actions */}
                             <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t border-slate-700">
                                 <button 
                                     type="button" 
@@ -566,8 +524,6 @@ export default function AdminPanel({ onBack }) {
                         </form>
                     </motion.div>
                 )}
-
-                {/* List View */}
                 {!isAdding && !editingEvent && viewMode === 'list' && (
                     <motion.div 
                         initial={{ opacity: 0 }}
@@ -640,8 +596,6 @@ export default function AdminPanel({ onBack }) {
                         </table>
                     </motion.div>
                 )}
-
-                {/* Carousel View */}
                 {!isAdding && !editingEvent && viewMode === 'carousel' && (
                     <div className="flex flex-col items-center justify-center h-[60vh]">
                         {events.length > 0 ? (
@@ -678,8 +632,6 @@ export default function AdminPanel({ onBack }) {
                                         </div>
                                     </motion.div>
                                 </AnimatePresence>
-                                
-                                {/* Controls */}
                                 <button onClick={prevSlide} className="absolute left-[-60px] top-1/2 -translate-y-1/2 p-4 bg-slate-800 hover:bg-mexi-pink rounded-full text-white transition-all shadow-lg">
                                     ←
                                 </button>
@@ -692,7 +644,6 @@ export default function AdminPanel({ onBack }) {
                         )}
                     </div>
                 )}
-                {/* Delete Confirmation Modal */}
                 <AnimatePresence>
                     {deleteConfirmation && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

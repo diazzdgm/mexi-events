@@ -7,7 +7,6 @@ export default function EventDetails({ event, onBack }) {
 
     return (
         <div className="w-full h-full overflow-y-auto bg-gray-100 pb-12 relative z-50">
-            {/* Hero Header with Image */}
             <div className="relative h-[50vh] w-full overflow-hidden">
                 <motion.img 
                     initial={{ scale: 1.1 }}

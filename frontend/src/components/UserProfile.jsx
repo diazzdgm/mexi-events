@@ -18,7 +18,6 @@ export default function UserProfile({ user, onClose, onUpdate }) {
                 className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative"
                 onClick={e => e.stopPropagation()}
             >
-                {/* Header */}
                 <div className="bg-slate-800 p-6 flex justify-between items-center border-b border-slate-700">
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                         <MapPin className="text-mexi-gold" />
@@ -31,8 +30,6 @@ export default function UserProfile({ user, onClose, onUpdate }) {
                         <X size={24} />
                     </button>
                 </div>
-
-                {/* Body */}
                 <div className="p-6 space-y-6">
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-wider text-slate-400 font-bold">Username</label>
@@ -41,8 +38,6 @@ export default function UserProfile({ user, onClose, onUpdate }) {
                         </div>
                     </div>
                 </div>
-
-                {/* Footer */}
                 <div className="p-6 bg-slate-800/50 border-t border-slate-700 flex justify-end">
                     <button
                         onClick={onClose}

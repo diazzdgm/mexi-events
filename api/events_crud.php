@@ -5,21 +5,13 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-// --- AUTHENTICATION CHECK ---
 $method = $_SERVER['REQUEST_METHOD'];
-
-// Handle preflight OPTIONS request first
 if ($method === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
-
-// Allow GET without auth (public map)
 if ($method !== 'GET') {
         require_once __DIR__ . '/../includes/conexion.php';
-
-        // Check if database connection failed
         if (!isset($pdo)) {
             http_response_code(500);
             echo json_encode(['error' => 'Database connection failed']);
@@ -35,8 +27,6 @@ if ($method !== 'GET') {
         echo json_encode(['error' => 'Authorization token required']);
         exit;
     }
-
-    // Verify token and role
     try {
         $stmt = $pdo->prepare("SELECT role FROM users WHERE api_token = :token");
         $stmt->execute([':token' => $token]);
@@ -53,7 +43,6 @@ if ($method !== 'GET') {
         exit;
     }
 }
-// ----------------------------
 
 switch ($method) {
     case 'GET':
@@ -167,10 +156,7 @@ function handlePut($pdo) {
 }
 
 function handleDelete($pdo) {
-    // Try to get ID from multiple sources
     $id = $_GET['id'] ?? null;
-    
-    // If not in URL, try JSON body
     if (!$id) {
         $input = file_get_contents("php://input");
         if ($input) {
@@ -186,7 +172,6 @@ function handleDelete($pdo) {
     }
 
     try {
-        // First check if event exists
         $stmt = $pdo->prepare("SELECT id FROM mexico_events WHERE id = :id");
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -196,9 +181,6 @@ function handleDelete($pdo) {
             echo json_encode(['error' => 'Event not found']);
             return;
         }
-
-        // Delete related records first if foreign keys don't cascade automatically
-        // (Optional: depending on your DB schema constraints)
         $pdo->prepare("DELETE FROM event_likes WHERE event_id = :id")->execute([':id' => $id]);
         $pdo->prepare("DELETE FROM event_ratings WHERE event_id = :id")->execute([':id' => $id]);
         $pdo->prepare("DELETE FROM comments WHERE event_id = :id")->execute([':id' => $id]);

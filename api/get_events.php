@@ -10,8 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../includes/conexion.php';
-
-// Check for user token (optional)
 $userId = null;
 $headers = function_exists('getallheaders') ? getallheaders() : [];
 $authHeader = $headers['Authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
@@ -26,11 +24,8 @@ if ($token) {
             $userId = $user['id'];
         }
     } catch (PDOException $e) {
-        // Ignore auth error, just treat as guest
     }
 }
-
-// Get state parameter
 $state = isset($_GET['state']) ? trim($_GET['state']) : '';
 
 if (empty($state)) {
@@ -39,9 +34,6 @@ if (empty($state)) {
 }
 
 try {
-    // Prepare SQL statement with stats using JOINs instead of subqueries
-    // We use LEFT JOIN on aggregated subqueries for best performance and correctness
-    // to avoid Cartesian product issues when joining multiple one-to-many relationships.
     
     $sql = "SELECT 
                 e.*,
@@ -74,21 +66,15 @@ try {
     $stmt->execute();
     
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Format numbers
     foreach ($events as &$event) {
         $event['likes_count'] = (int)$event['likes_count'];
         $event['rating_count'] = (int)$event['rating_count'];
         $event['average_rating'] = (float)$event['average_rating'];
-        // Fix for JOIN aggregation logic
-        // If user has not rated, MAX returns NULL, so cast to int might be 0, which is fine
-        // But if user has not liked, MAX returns 0
         $event['user_liked'] = (bool)$event['user_liked'];
         $event['user_rating'] = $event['user_rating'] ? (int)$event['user_rating'] : null;
     }
     
     if (empty($events)) {
-        // Return a structured response indicating no events but not an error per se
         echo json_encode(['message' => 'No hay eventos próximos en este estado', 'data' => []]);
     } else {
         echo json_encode(['data' => $events]);

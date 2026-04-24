@@ -27,10 +27,7 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['password'])) {
-        // Generate token
         $token = bin2hex(random_bytes(32));
-        
-        // Save token to DB
         $update = $pdo->prepare("UPDATE users SET api_token = :token WHERE id = :id");
         $update->execute([':token' => $token, ':id' => $user['id']]);
 

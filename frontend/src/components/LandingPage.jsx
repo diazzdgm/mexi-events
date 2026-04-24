@@ -8,8 +8,6 @@ export default function LandingPage({ onExplore, onSelectState }) {
   const videoRef = React.useRef(null);
 
   useEffect(() => {
-    // Ideally fetch from an endpoint like /api/get_featured_events.php
-    // For now, we'll simulate or fetch a few states we know have events
     const statesToFetch = ['Guanajuato', 'Oaxaca', 'Mexico City'];
     
     Promise.all(statesToFetch.map(state => 
@@ -29,9 +27,7 @@ export default function LandingPage({ onExplore, onSelectState }) {
 
   return (
     <div className="w-full min-h-screen bg-mexi-dark text-white overflow-y-auto">
-      {/* Hero Section */}
       <section className="relative h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden">
-        {/* Background Video */}
         <div className="absolute inset-0 z-0">
           <video 
             ref={videoRef}
@@ -77,8 +73,6 @@ export default function LandingPage({ onExplore, onSelectState }) {
           </motion.button>
         </motion.div>
       </section>
-
-      {/* Featured Locations */}
       <section className="py-20 px-4 md:px-10 max-w-7xl mx-auto z-10 relative">
         <motion.div
             initial={{ opacity: 0 }}
@@ -135,9 +129,6 @@ export default function LandingPage({ onExplore, onSelectState }) {
             )}
         </motion.div>
       </section>
-      
-      {/* Floating Toggle Preview (Mini Map Trigger) - Only visible when scrolled down a bit? 
-          Actually user asked for persistent floating toggle. Let's put it bottom right. */}
       <motion.button
         initial={{ opacity: 0, scale: 0 }}
         animate={{ opacity: 1, scale: 1 }}

@@ -2,8 +2,6 @@ import React, { useRef } from 'react';
 
 export default function MexicoMap({ onHover, onLeave, onClick, userStateId }) {
     const svgRef = useRef(null);
-
-    // Helper to check if interaction is in the "middle area" of the state
     const isInteractionValid = (e) => {
         if (!svgRef.current || !e.target.getBBox) return true;
 
@@ -11,8 +9,6 @@ export default function MexicoMap({ onHover, onLeave, onClick, userStateId }) {
             const point = svgRef.current.createSVGPoint();
             point.x = e.clientX;
             point.y = e.clientY;
-            
-            // Handle potential CTM errors
             const ctm = svgRef.current.getScreenCTM();
             if (!ctm) return true;
             
@@ -24,19 +20,14 @@ export default function MexicoMap({ onHover, onLeave, onClick, userStateId }) {
 
             const rx = bbox.width / 2;
             const ry = bbox.height / 2;
-            
-            // Restrict to central 60% of the state
             const scale = 0.6; 
             
             const dx = svgPoint.x - cx;
             const dy = svgPoint.y - cy;
-            
-            // Elliptical check
             const value = (dx * dx) / ((rx * scale) * (rx * scale)) + (dy * dy) / ((ry * scale) * (ry * scale));
             
             return value <= 1;
         } catch (error) {
-            // console.error("Error calculating map hit:", error);
             return true;
         }
     };
@@ -62,8 +53,6 @@ export default function MexicoMap({ onHover, onLeave, onClick, userStateId }) {
             onClick && onClick(stateName, e);
         }
     };
-
-    // Helper to determine class based on user location
     const getStateClass = (stateId) => {
         const isUserHome = userStateId && userStateId.toLowerCase() === stateId.toLowerCase();
         

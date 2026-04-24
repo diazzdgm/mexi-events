@@ -8,7 +8,6 @@ header('Access-Control-Allow-Methods: GET');
 require_once __DIR__ . '/../includes/conexion.php';
 
 try {
-    // Get top 5 events by likes
     $sql = "SELECT 
                 e.id, 
                 e.event_title, 
@@ -28,8 +27,6 @@ try {
             
     $stmt = $pdo->query($sql);
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Format numbers
     foreach ($events as &$event) {
         $event['likes_count'] = (int)$event['likes_count'];
         $event['average_rating'] = (float)$event['average_rating'];

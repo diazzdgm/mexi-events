@@ -13,8 +13,6 @@ export default function Login({ onLogin, onCancel }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        
-        // Client-side validations
         if (isRegistering) {
             if (username.length < 3 || username.length > 20) {
                 setError("Username must be between 3 and 20 characters");
@@ -50,10 +48,8 @@ export default function Login({ onLogin, onCancel }) {
             const data = await response.json();
             
             if (data.success) {
-                // Save to localStorage
                 localStorage.setItem('mexi_user', JSON.stringify(data.user));
                 localStorage.setItem('mexi_token', data.token);
-                // Pass user data AND registration status flag
                 onLogin(data.user, isRegistering);
             } else {
                 setError(data.error || 'Authentication failed');

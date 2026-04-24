@@ -65,7 +65,6 @@ export const useGeolocation = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Si el usuario ya tiene ubicación guardada, usarla
     const storedUser = localStorage.getItem('mexi_user');
     if (storedUser) {
       const user = JSON.parse(storedUser);
@@ -79,8 +78,6 @@ export const useGeolocation = () => {
         return;
       }
     }
-
-    // Usar geolocalización del navegador (GPS)
     if (!navigator.geolocation) {
       setError('Geolocalización no soportada');
       setLoading(false);
@@ -102,8 +99,6 @@ export const useGeolocation = () => {
           };
 
           setLocation(locationData);
-
-          // Guardar en usuario si está logueado
           if (storedUser && stateId) {
             const token = localStorage.getItem('mexi_token');
             fetch(import.meta.env.VITE_API_URL + '/api/geolocation.php', {

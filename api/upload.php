@@ -10,10 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
-
-// Check for file
 if (!isset($_FILES['file'])) {
-    // Check if POST max size was exceeded
     if (empty($_FILES) && empty($_POST) && isset($_SERVER['CONTENT_TYPE']) && $_SERVER['CONTENT_LENGTH'] > 0) {
         http_response_code(400);
         $maxSize = ini_get('post_max_size');
@@ -35,8 +32,6 @@ $fileType = $file['type'];
 
 $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 $allowed = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'mp3'];
-
-// Use finfo to check MIME type server-side
 $finfo = new finfo(FILEINFO_MIME_TYPE);
 $mimeType = $finfo->file($fileTmpName);
 
@@ -55,23 +50,17 @@ if (!in_array($fileExt, $allowed)) {
     echo json_encode(['error' => 'You cannot upload files of this type']);
     exit;
 }
-
-// Validate MIME type matches extension
 $isValid = false;
 if (array_key_exists($fileExt, $allowedMimes)) {
     if ($allowedMimes[$fileExt] === $mimeType) {
         $isValid = true;
     } 
-    // Handle jpeg/jpg edge case
     elseif (($fileExt === 'jpg' || $fileExt === 'jpeg') && $mimeType === 'image/jpeg') {
         $isValid = true;
     }
-    // Handle generic video/octet-stream edge cases
     elseif (strpos($mimeType, 'video/') === 0 && strpos($fileType, 'video/') === 0) {
-        // If both finfo and browser say it's video, trust it (slightly risky but better UX)
         $isValid = true;
     }
-    // Trust .mp3 extension regardless of detected MIME (some browsers/finfo report application/octet-stream)
     elseif ($fileExt === 'mp3') {
         $isValid = true;
     }
@@ -90,8 +79,6 @@ if (!$isValid) {
         if ($fileSize < 50000000) { // 50MB limit
             $fileNameNew = uniqid('', true) . "." . $fileExt;
             $uploadDir = __DIR__ . '/../public/uploads/';
-            
-            // Create dir if not exists
             if (!file_exists($uploadDir)) {
                 if (!mkdir($uploadDir, 0777, true)) {
                     http_response_code(500);
@@ -103,8 +90,6 @@ if (!$isValid) {
             $fileDestination = $uploadDir . $fileNameNew;
             
             if (move_uploaded_file($fileTmpName, $fileDestination)) {
-                // Return the URL
-                // Use HTTP_HOST to adapt to whatever port the server is running on (e.g. 8000)
                 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
                 $host = $_SERVER['HTTP_HOST'];
                 $url = "$protocol://$host/mexi-events/public/uploads/$fileNameNew";

@@ -10,9 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../includes/conexion.php';
-
-// Map IPAPI regions to our internal State IDs
-// This is a simplified mapping. In production, use a more robust lookup.
 function mapRegionToStateId($region) {
     $mapping = [
         'Aguascalientes' => 'agu',
@@ -48,8 +45,6 @@ function mapRegionToStateId($region) {
         'Yucatan' => 'yuc',
         'Zacatecas' => 'zac'
     ];
-    
-    // Fuzzy matching or direct key
     foreach ($mapping as $key => $val) {
         if (stripos($region, $key) !== false) return $val;
     }
@@ -59,15 +54,10 @@ function mapRegionToStateId($region) {
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    // 1. Get IP
     $ip = $_SERVER['REMOTE_ADDR'];
-    // Localhost fallback for testing
     if ($ip === '::1' || $ip === '127.0.0.1') {
-        // Fallback IP (Mexico City)
         $ip = '189.203.0.0'; 
     }
-
-    // 2. Call IPAPI (Free)
     $apiUrl = "https://ipapi.co/{$ip}/json/";
     $response = @file_get_contents($apiUrl);
     
@@ -91,7 +81,6 @@ if ($method === 'GET') {
     }
 
 } elseif ($method === 'POST') {
-    // Save location preference for user
     $headers = function_exists('getallheaders') ? getallheaders() : [];
     $authHeader = $headers['Authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
     $token = str_replace('Bearer ', '', $authHeader);

@@ -37,7 +37,6 @@ if ($method === 'GET') {
         echo json_encode(['error' => $e->getMessage()]);
     }
 } elseif ($method === 'POST') {
-    // Auth Check
     $headers = function_exists('getallheaders') ? getallheaders() : [];
     $authHeader = $headers['Authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
     $token = str_replace('Bearer ', '', $authHeader);
@@ -51,8 +50,6 @@ if ($method === 'GET') {
     $data = json_decode(file_get_contents("php://input"), true);
     $event_id = $data['event_id'] ?? null;
     $comment = $data['comment'] ?? '';
-
-    // Verify User and get username for response
     $stmt = $pdo->prepare("SELECT id, username FROM users WHERE api_token = :token");
     $stmt->execute([':token' => $token]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);

@@ -11,15 +11,11 @@ export default function EventCard({ event, position, visible, loading, error, on
     const [newComment, setNewComment] = useState('');
     const [commentsLoading, setCommentsLoading] = useState(false);
     const [user, setUser] = useState(null);
-
-    // Interaction State
     const [likesCount, setLikesCount] = useState(0);
     const [isLiked, setIsLiked] = useState(false);
     const [avgRating, setAvgRating] = useState(0);
     const [ratingCount, setRatingCount] = useState(0);
     const [userRating, setUserRating] = useState(0);
-
-    // Video refs and state
     const expandedVideoRef = useRef(null);
     const cardVideoRef = useRef(null);
     const [isExpPlaying, setIsExpPlaying] = useState(true);
@@ -28,8 +24,6 @@ export default function EventCard({ event, position, visible, loading, error, on
     const [expDuration, setExpDuration] = useState(0);
     const [expCurrentTime, setExpCurrentTime] = useState(0);
     const [isCardPlaying, setIsCardPlaying] = useState(true);
-
-    // Audio refs and state
     const expandedAudioRef = useRef(null);
     const cardAudioRef = useRef(null);
     const [isCardAudioPlaying, setIsCardAudioPlaying] = useState(false);
@@ -37,13 +31,8 @@ export default function EventCard({ event, position, visible, loading, error, on
     const [expAudioProgress, setExpAudioProgress] = useState(0);
     const [expAudioDuration, setExpAudioDuration] = useState(0);
     const [expAudioCurrentTime, setExpAudioCurrentTime] = useState(0);
-
-    // Normalize events
     const eventsList = Array.isArray(event) ? event : (event ? [event] : []);
     const currentEvent = eventsList[currentIndex];
-
-    // Reset index when event data changes significantly (e.g. switching context)
-    // We check if the current event is still valid in the new list, if not reset to 0
     useEffect(() => {
         if (currentIndex >= eventsList.length) {
             setCurrentIndex(0);
@@ -54,8 +43,6 @@ export default function EventCard({ event, position, visible, loading, error, on
         const storedUser = localStorage.getItem('mexi_user');
         if (storedUser) setUser(JSON.parse(storedUser));
     }, []);
-
-    // Sync interactions with current event data
     useEffect(() => {
         if (currentEvent) {
             setLikesCount(currentEvent.likes_count || 0);
@@ -65,8 +52,6 @@ export default function EventCard({ event, position, visible, loading, error, on
             setUserRating(currentEvent.user_rating || 0);
         }
     }, [currentEvent]);
-
-    // Force expand if prop is true
     useEffect(() => {
         if (forceExpand && currentEvent) {
             setIsExpanded(true);
@@ -89,7 +74,6 @@ export default function EventCard({ event, position, visible, loading, error, on
         SoundManager.play('pop');
 
         const newLiked = !isLiked;
-        // Optimistic update
         setIsLiked(newLiked);
         setLikesCount(prev => newLiked ? prev + 1 : prev - 1);
 
@@ -107,7 +91,6 @@ export default function EventCard({ event, position, visible, loading, error, on
             if (data.success) {
                 setLikesCount(data.likes_count);
             } else {
-                // Revert
                 setIsLiked(!newLiked);
                 setLikesCount(prev => !newLiked ? prev + 1 : prev - 1);
             }
@@ -125,8 +108,6 @@ export default function EventCard({ event, position, visible, loading, error, on
         }
 
         SoundManager.play('success');
-
-        // Optimistic update for user rating only
         setUserRating(rating);
 
         const token = localStorage.getItem('mexi_token');
@@ -192,10 +173,8 @@ export default function EventCard({ event, position, visible, loading, error, on
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                // Replace optimistic comment with real one
                 setComments(prev => prev.map(c => c.id === optimisticComment.id ? data.comment : c));
             } else {
-                // Revert on error
                 alert('Failed to post comment');
                 setComments(prev => prev.filter(c => c.id !== optimisticComment.id));
             }
@@ -204,8 +183,6 @@ export default function EventCard({ event, position, visible, loading, error, on
             setComments(prev => prev.filter(c => c.id !== optimisticComment.id));
         });
     };
-
-    // Video control handlers
     const toggleExpandedPlay = () => {
         const video = expandedVideoRef.current;
         if (!video) return;
@@ -267,8 +244,6 @@ export default function EventCard({ event, position, visible, loading, error, on
         if (video.paused) { video.play(); setIsCardPlaying(true); }
         else { video.pause(); setIsCardPlaying(false); }
     };
-
-    // --- Audio control handlers ---
     const toggleCardAudioPlay = (e) => {
         e.stopPropagation();
         const audio = cardAudioRef.current;
@@ -306,8 +281,6 @@ export default function EventCard({ event, position, visible, loading, error, on
     };
 
     if (!visible) return null;
-
-    // Calculate position for mini card
     const isRight = position.x < window.innerWidth / 2;
     const isBottom = position.y > window.innerHeight / 2;
     
@@ -325,8 +298,6 @@ export default function EventCard({ event, position, visible, loading, error, on
         e?.stopPropagation();
         setCurrentIndex((prev) => (prev - 1 + eventsList.length) % eventsList.length);
     };
-
-    // --- EXPANDED VIEW ---
     if (isExpanded && currentEvent) {
         return (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 md:p-8">
@@ -342,8 +313,6 @@ export default function EventCard({ event, position, visible, loading, error, on
                     >
                         <Minimize2 size={24} />
                     </button>
-
-                    {/* Left: Media & Details */}
                     <div className="w-full md:w-2/3 h-1/2 md:h-full flex flex-col relative bg-black">
                         <div className="flex-1 relative overflow-hidden group">
                              {currentEvent.image_url && getYouTubeEmbedUrl(currentEvent.image_url) ? (
@@ -474,8 +443,6 @@ export default function EventCard({ event, position, visible, loading, error, on
                                 )}
                             </div>
                         </div>
-
-                        {/* Video Controls Bar */}
                         {currentEvent.image_url && currentEvent.image_url.match(/\.(mp4|webm)$/i) && !getYouTubeEmbedUrl(currentEvent.image_url) && (
                             <div className="bg-black/95 px-4 py-2 flex items-center gap-3 border-t border-slate-700 shrink-0">
                                 <button onClick={toggleExpandedPlay} className="text-white hover:text-mexi-pink transition-colors">
@@ -502,8 +469,6 @@ export default function EventCard({ event, position, visible, loading, error, on
                                 </button>
                             </div>
                         )}
-
-                         {/* Carousel Controls (Expanded) */}
                          {eventsList.length > 1 && (
                             <>
                                 <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-mexi-pink text-white rounded-full backdrop-blur-sm transition-all">
@@ -515,8 +480,6 @@ export default function EventCard({ event, position, visible, loading, error, on
                             </>
                         )}
                     </div>
-
-                    {/* Right: Comments Section */}
                     <div className="w-full md:w-1/3 h-1/2 md:h-full bg-slate-800 border-l border-slate-700 flex flex-col">
                         <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800 z-10">
                             <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -524,8 +487,6 @@ export default function EventCard({ event, position, visible, loading, error, on
                             </h3>
                             <span className="text-sm text-gray-400">{comments.length} comments</span>
                         </div>
-
-                        {/* Comments List */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
                             {commentsLoading ? (
                                 <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mexi-pink"></div></div>
@@ -554,8 +515,6 @@ export default function EventCard({ event, position, visible, loading, error, on
                                 ))
                             )}
                         </div>
-
-                        {/* Comment Input */}
                         <div className="p-4 bg-slate-900 border-t border-slate-700">
                             <form onSubmit={handlePostComment} className="relative">
                                 <input 
@@ -580,8 +539,6 @@ export default function EventCard({ event, position, visible, loading, error, on
             </div>
         );
     }
-
-    // --- MINI CARD VIEW ---
     return (
         <div 
             className="fixed z-50 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-2xl p-4 w-80 text-white transition-opacity duration-300"
@@ -715,8 +672,6 @@ export default function EventCard({ event, position, visible, loading, error, on
                             </p>
                         </motion.div>
                     </AnimatePresence>
-
-                    {/* Navigation Arrows */}
                     {eventsList.length > 1 && (
                         <>
                             <button 

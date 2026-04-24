@@ -13,8 +13,8 @@ require_once __DIR__ . '/../includes/conexion.php';
 
 // Check for user token (optional)
 $userId = null;
-$headers = getallheaders();
-$authHeader = $headers['Authorization'] ?? '';
+$headers = function_exists('getallheaders') ? getallheaders() : [];
+$authHeader = $headers['Authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
 $token = str_replace('Bearer ', '', $authHeader);
 
 if ($token) {

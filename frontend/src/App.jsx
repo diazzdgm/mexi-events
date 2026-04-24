@@ -30,6 +30,7 @@ function App() {
   
   // Use ref for timeout to ensure synchronous access across closures
   const hideTimeoutRef = useRef(null);
+  const geoAutoSelectDoneRef = useRef(false);
 
   useEffect(() => {
     if (location && location.is_mexico === false) {
@@ -43,6 +44,45 @@ function App() {
         if (!warningDismissed) {
             setShowRangeWarning(true);
         }
+    }
+  }, [location, user]);
+
+  // Auto-seleccionar el estado del usuario al entrar al mapa
+  useEffect(() => {
+    if (
+      view !== 'map' ||
+      !location?.state_id ||
+      selectedState ||
+      geoAutoSelectDoneRef.current
+    ) return;
+
+    const stateObj = MEXICO_STATES.find(s => s.id === location.state_id);
+    if (!stateObj) return;
+
+    geoAutoSelectDoneRef.current = true;
+
+    const stateName = stateObj.name;
+    setSelectedState(stateName);
+    setHoveredState(stateName);
+    setCardPosition({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
+    fetchEvents(stateName);
+    setShowNearMePopup(true);
+    SoundManager.play('success');
+    setTimeout(() => setShowNearMePopup(false), 4000);
+  }, [view, location]);
+
+  // Cuando la ubicación GPS se detecta y el usuario ya está logueado, guardar su estado
+  useEffect(() => {
+    if (location?.state_id && user && !user.state_id) {
+      const updatedUser = { ...user, state_id: location.state_id, country_code: location.country_code || 'MX' };
+      setUser(updatedUser);
+      localStorage.setItem('mexi_user', JSON.stringify(updatedUser));
+      const token = localStorage.getItem('mexi_token');
+      fetch(import.meta.env.VITE_API_URL + '/api/geolocation.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ country_code: updatedUser.country_code, state_id: updatedUser.state_id }),
+      });
     }
   }, [location, user]);
 
@@ -94,21 +134,31 @@ function App() {
 
   const handleLoginSuccess = (userData, isNewUser = false) => {
       SoundManager.play('success');
+
+      // Si el usuario no tiene estado guardado pero GPS ya lo detectó, guardarlo
+      if (!userData.state_id && location?.state_id) {
+          userData.state_id = location.state_id;
+          userData.country_code = location.country_code || 'MX';
+          const token = localStorage.getItem('mexi_token') || userData.token;
+          fetch(import.meta.env.VITE_API_URL + '/api/geolocation.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({ country_code: userData.country_code, state_id: userData.state_id }),
+          });
+          localStorage.setItem('mexi_user', JSON.stringify(userData));
+      }
+
       setUser(userData);
       setShowLogin(false);
-      
+
       if (isNewUser) {
           setShowProfile(true);
       } else if (userData.state_id) {
-          // If user already has a state, show it
           handleUpdateUser(userData);
       }
-      
-      // If there was a pending state param, maybe nav there?
-      // For now, if they clicked Explore, we should probably nav to map
-      // But we don't know if they clicked Explore or just Login button.
-      // Let's just stay on Landing, user can click Explore again (now enabled).
-      // Or auto-nav if we want to be fancy. Let's keep it simple.
   };
 
   const handleLogout = () => {
@@ -142,6 +192,7 @@ function App() {
     setHoveredState(null);
     setSelectedState(null);
     setEventData(null);
+    geoAutoSelectDoneRef.current = false;
     const url = new URL(window.location);
     url.searchParams.delete('state');
     window.history.pushState({}, '', url);
@@ -155,16 +206,17 @@ function App() {
       // We set the selectedState to the event's state to highlight it
       // And we set the eventData to just this event
       
-      const stateObj = MEXICO_STATES.find(s => s.name.toLowerCase() === event.state_name.toLowerCase());
+      const stateName = event.state_name || event.state;
+      const stateObj = MEXICO_STATES.find(s => s.name.toLowerCase() === (stateName || '').toLowerCase());
       if (stateObj) {
           setSelectedState(stateObj.name); // Highlight map
       } else {
           setSelectedState(null);
       }
-      
+
       // Override standard fetch with this specific event
       setEventData(event);
-      setHoveredState(event.state_name); // Trigger card appearance
+      setHoveredState(stateName); // Trigger card appearance
       
       // Center card
       setCardPosition({ x: window.innerWidth / 2 - 160, y: window.innerHeight / 2 - 100 });
@@ -185,7 +237,7 @@ function App() {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    fetch(`http://localhost/mexi-events/api/get_events.php?state=${encodeURIComponent(stateName)}`, {
+    fetch(`${import.meta.env.VITE_API_URL}/api/get_events.php?state=${encodeURIComponent(stateName)}`, {
         headers: headers
     })
       .then(res => res.json())
@@ -363,8 +415,8 @@ function App() {
                       <MapPin size={24} className="text-white animate-bounce" />
                   </div>
                   <div>
-                      <h4 className="font-bold text-lg leading-tight">¡Bienvenido!</h4>
-                      <p className="text-sm font-medium opacity-90">Mira los eventos cerca de ti</p>
+                      <h4 className="font-bold text-lg leading-tight">Estás aquí</h4>
+                      <p className="text-sm font-medium opacity-90">{selectedState}</p>
                   </div>
                   <button 
                       onClick={() => setShowNearMePopup(false)}

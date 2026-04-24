@@ -1,0 +1,184 @@
+<?php
+/**
+ * Actualiza las imágenes de todos los eventos con fotos variadas de Unsplash
+ * Ejecutar: php queries/update_imagenes.php
+ */
+require_once __DIR__ . '/../includes/conexion.php';
+
+// [event_title, nueva_imagen]
+$imagenes = [
+    // AGUASCALIENTES
+    'Feria Nacional de San Marcos'          => 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=600&auto=format&fit=crop',
+    'Festival de las Calaveras'             => 'https://images.unsplash.com/photo-1508361001413-7a9dca21d08a?q=80&w=600&auto=format&fit=crop',
+    'Festival Mítico de Aguascalientes'     => 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=600&auto=format&fit=crop',
+
+    // BAJA CALIFORNIA
+    'Festival de Vino y Gastronomía Valle de Guadalupe' => 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=600&auto=format&fit=crop',
+    'Tijuana Innovadora'                    => 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop',
+    'Festival de Música Electrónica BajaMed' => 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=600&auto=format&fit=crop',
+
+    // BAJA CALIFORNIA SUR
+    'Avistamiento de Ballenas en San Ignacio' => 'https://images.unsplash.com/photo-1568430462989-44163eb1752f?q=80&w=600&auto=format&fit=crop',
+    'Festival del Dorado Los Cabos'         => 'https://images.unsplash.com/photo-1504805572947-34fad45aed93?q=80&w=600&auto=format&fit=crop',
+    'Los Cabos Open de Tenis'               => 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=600&auto=format&fit=crop',
+
+    // CAMPECHE
+    'Carnaval de Campeche'                  => 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=600&auto=format&fit=crop',
+    'Festival de las Ánimas Campeche'       => 'https://images.unsplash.com/photo-1508361001413-7a9dca21d08a?q=80&w=600&auto=format&fit=crop',
+    'Festival de Aves de Campeche'          => 'https://images.unsplash.com/photo-1444464666168-49d633b86797?q=80&w=600&auto=format&fit=crop',
+
+    // CHIAPAS
+    'Feria de la Candelaria San Cristóbal'  => 'https://images.unsplash.com/photo-1577083552431-6e5fd01988ec?q=80&w=600&auto=format&fit=crop',
+    'Festival de Cacao y Chocolate de Chiapas' => 'https://images.unsplash.com/photo-1481391243133-f96216dcb5d2?q=80&w=600&auto=format&fit=crop',
+    'Festival de las Culturas Indígenas de Chiapas' => 'https://images.unsplash.com/photo-1594911417539-77a28e5557b7?q=80&w=600&auto=format&fit=crop',
+
+    // CHIHUAHUA
+    'Barrancas del Cobre Adventure Fest'    => 'https://images.unsplash.com/photo-1533130061792-64b345e4a833?q=80&w=600&auto=format&fit=crop',
+    'Festival Cultural Chihuahua'           => 'https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?q=80&w=600&auto=format&fit=crop',
+    'Carrera de la Tarahumara en Urique'    => 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=600&auto=format&fit=crop',
+
+    // COAHUILA
+    'Feria de la Vendimia de Parras'        => 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?q=80&w=600&auto=format&fit=crop',
+    'Festival Internacional de las Artes de Coahuila' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop',
+    'Festival de la Guitarra de Saltillo'   => 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=600&auto=format&fit=crop',
+
+    // COLIMA
+    'Feria de Todos Santos Colima'          => 'https://images.unsplash.com/photo-1496568816309-51d7c20e3b21?q=80&w=600&auto=format&fit=crop',
+    'Festival de la Tortuga Marina de Manzanillo' => 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?q=80&w=600&auto=format&fit=crop',
+    'Festival del Fuego Volcán de Colima'   => 'https://images.unsplash.com/photo-1519834785169-98be25ec3f84?q=80&w=600&auto=format&fit=crop',
+
+    // DURANGO
+    'Festival Internacional de Cine de Durango' => 'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=600&auto=format&fit=crop',
+    'Feria Nacional Francisco Villa'        => 'https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=600&auto=format&fit=crop',
+    'Festival del Folclor Internacional de Durango' => 'https://images.unsplash.com/photo-1518559557564-fb41ab69cc4a?q=80&w=600&auto=format&fit=crop',
+
+    // GUANAJUATO
+    'Festival Internacional Cervantino'     => 'https://images.unsplash.com/photo-1590930337357-194d21695426?q=80&w=600&auto=format&fit=crop',
+    'Festival Internacional del Globo de León' => 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=600&auto=format&fit=crop',
+    'Festival Día de Muertos en Guanajuato' => 'https://images.unsplash.com/photo-1509909756405-be0199881695?q=80&w=600&auto=format&fit=crop',
+
+    // GUERRERO
+    'Festival de la Cultura del Mar Acapulco' => 'https://images.unsplash.com/photo-1506929562872-bb421503ef21?q=80&w=600&auto=format&fit=crop',
+    'Torneo Internacional de Pesca Zihuatanejo' => 'https://images.unsplash.com/photo-1504805572947-34fad45aed93?q=80&w=600&auto=format&fit=crop',
+    'Festival de la Mariposa Monarca en Guerrero' => 'https://images.unsplash.com/photo-1444464666168-49d633b86797?q=80&w=600&auto=format&fit=crop',
+
+    // HIDALGO
+    'Festival del Xantolo Huasteca'         => 'https://images.unsplash.com/photo-1508361001413-7a9dca21d08a?q=80&w=600&auto=format&fit=crop',
+    'Carnaval de Huejutla'                  => 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=600&auto=format&fit=crop',
+    'Festival del Pulque y la Cultura Hidalguense' => 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=600&auto=format&fit=crop',
+
+    // JALISCO
+    'Festival Internacional Mariachi y Charrería' => 'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?q=80&w=600&auto=format&fit=crop',
+    'Feria Internacional del Libro de Guadalajara' => 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600&auto=format&fit=crop',
+    'Festival del Tequila en la Cuna del Tequila' => 'https://images.unsplash.com/photo-1436076863579-8a1c8f72e413?q=80&w=600&auto=format&fit=crop',
+
+    // CIUDAD DE MÉXICO
+    'Gran Premio de México F1'              => 'https://images.unsplash.com/photo-1529528753239-2a94562512f4?q=80&w=600&auto=format&fit=crop',
+    'Día de Muertos en el Zócalo'           => 'https://images.unsplash.com/photo-1509909756405-be0199881695?q=80&w=600&auto=format&fit=crop',
+    'Festival del Centro Histórico de México' => 'https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?q=80&w=600&auto=format&fit=crop',
+
+    // ESTADO DE MÉXICO
+    'Festival de Globos de Cantoya en Metepec' => 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=600&auto=format&fit=crop',
+    'Feria del Alfeñique de Toluca'         => 'https://images.unsplash.com/photo-1496568816309-51d7c20e3b21?q=80&w=600&auto=format&fit=crop',
+    'Festival de Arte Contemporáneo Toluca' => 'https://images.unsplash.com/photo-1531913223931-b0d3198229ee?q=80&w=600&auto=format&fit=crop',
+
+    // MICHOACÁN
+    'Día de Muertos en Pátzcuaro y Janitzio' => 'https://images.unsplash.com/photo-1509909756405-be0199881695?q=80&w=600&auto=format&fit=crop',
+    'Festival Internacional de Órgano de Morelia' => 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?q=80&w=600&auto=format&fit=crop',
+    'Festival de la Mariposa Monarca en Michoacán' => 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?q=80&w=600&auto=format&fit=crop',
+
+    // MORELOS
+    'Carnaval de Tepoztlán'                 => 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=600&auto=format&fit=crop',
+    'Festival Cultural de Cuernavaca'       => 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=600&auto=format&fit=crop',
+    'Festival de Cine de Morelos'           => 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=600&auto=format&fit=crop',
+
+    // NAYARIT
+    'Festival de Surf de Sayulita'          => 'https://images.unsplash.com/photo-1502680390469-be75c86b636f?q=80&w=600&auto=format&fit=crop',
+    'Semana del Arte Wixáritari'            => 'https://images.unsplash.com/photo-1577083552431-6e5fd01988ec?q=80&w=600&auto=format&fit=crop',
+    'Festival de Jazz del Pacífico en Tepic' => 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=600&auto=format&fit=crop',
+
+    // NUEVO LEÓN
+    'Festival Santa Lucía Monterrey'        => 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=600&auto=format&fit=crop',
+    'Feria Internacional del Libro de Monterrey' => 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?q=80&w=600&auto=format&fit=crop',
+    'Monterrey International Music Fest'    => 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=600&auto=format&fit=crop',
+
+    // OAXACA
+    'Guelaguetza'                           => 'https://images.unsplash.com/photo-1594911417539-77a28e5557b7?q=80&w=600&auto=format&fit=crop',
+    'Noche de Rábanos'                      => 'https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=600&auto=format&fit=crop',
+    'Festival del Mezcal Oaxaqueño'         => 'https://images.unsplash.com/photo-1436076863579-8a1c8f72e413?q=80&w=600&auto=format&fit=crop',
+
+    // PUEBLA
+    'Festival 5 de Mayo en Puebla'          => 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=600&auto=format&fit=crop',
+    'Festival de Talavera de Puebla'        => 'https://images.unsplash.com/photo-1577083552431-6e5fd01988ec?q=80&w=600&auto=format&fit=crop',
+    'Festival de la China Poblana'          => 'https://images.unsplash.com/photo-1518559557564-fb41ab69cc4a?q=80&w=600&auto=format&fit=crop',
+
+    // QUERÉTARO
+    'Festival de Quesos y Vinos de Tequisquiapan' => 'https://images.unsplash.com/photo-1452195100486-9cc805987862?q=80&w=600&auto=format&fit=crop',
+    'Festival de la Vendimia del Semidesierto' => 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?q=80&w=600&auto=format&fit=crop',
+    'Festival Internacional de Globos Aerostáticos de Querétaro' => 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=600&auto=format&fit=crop',
+
+    // QUINTANA ROO
+    'Festival del Caribe en Cancún'         => 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?q=80&w=600&auto=format&fit=crop',
+    'Reef Check en el Arrecife de Cozumel'  => 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?q=80&w=600&auto=format&fit=crop',
+    'Festival de Jazz de Playa del Carmen'  => 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=600&auto=format&fit=crop',
+
+    // SAN LUIS POTOSÍ
+    'Semana Santa en Real de Catorce'       => 'https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=600&auto=format&fit=crop',
+    'Festival de Danza Contemporánea SLP'   => 'https://images.unsplash.com/photo-1518559557564-fb41ab69cc4a?q=80&w=600&auto=format&fit=crop',
+    'Festival del Huapango en la Huasteca'  => 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=600&auto=format&fit=crop',
+
+    // SINALOA
+    'Carnaval de Mazatlán'                  => 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=600&auto=format&fit=crop',
+    'Festival Cultural Sinaloa'             => 'https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?q=80&w=600&auto=format&fit=crop',
+    'Festival Gastronómico del Mariscos de Mazatlán' => 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=600&auto=format&fit=crop',
+
+    // SONORA
+    'Festival del Desierto Sonora'          => 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?q=80&w=600&auto=format&fit=crop',
+    'Feria Ganadera de Hermosillo'          => 'https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=600&auto=format&fit=crop',
+    'Festival Internacional del Desierto de Altar' => 'https://images.unsplash.com/photo-1533130061792-64b345e4a833?q=80&w=600&auto=format&fit=crop',
+
+    // TABASCO
+    'Festival de Cacao y Chocolate de Tabasco' => 'https://images.unsplash.com/photo-1481391243133-f96216dcb5d2?q=80&w=600&auto=format&fit=crop',
+    'Feria Tabasco en Villahermosa'         => 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=600&auto=format&fit=crop',
+    'Festival de la Música Tropical de Villahermosa' => 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=600&auto=format&fit=crop',
+
+    // TAMAULIPAS
+    'Pesca de Lobina en Guerrero Tamaulipas' => 'https://images.unsplash.com/photo-1504805572947-34fad45aed93?q=80&w=600&auto=format&fit=crop',
+    'Festival Internacional de Jazz de Tampico' => 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=600&auto=format&fit=crop',
+    'Festival Internacional de las Aves en el Golfo' => 'https://images.unsplash.com/photo-1444464666168-49d633b86797?q=80&w=600&auto=format&fit=crop',
+
+    // TLAXCALA
+    'Carnaval de Tlaxcala Huehues'          => 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=600&auto=format&fit=crop',
+    'Festival de la Mole Tlaxcalteca'       => 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=600&auto=format&fit=crop',
+    'Festival del Pulque de Tlaxcala'       => 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=600&auto=format&fit=crop',
+
+    // VERACRUZ
+    'Carnaval de Veracruz'                  => 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=600&auto=format&fit=crop',
+    'Festival del Café de Coatepec'         => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop',
+    'Festival Internacional del Son Jarocho' => 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=600&auto=format&fit=crop',
+
+    // YUCATÁN
+    'Equinoccio de Primavera en Chichén Itzá' => 'https://images.unsplash.com/photo-1518182170546-0766ba6f9285?q=80&w=600&auto=format&fit=crop',
+    'Hanal Pixán: Festival de las Ánimas en Mérida' => 'https://images.unsplash.com/photo-1509909756405-be0199881695?q=80&w=600&auto=format&fit=crop',
+    'Mérida en Domingo'                     => 'https://images.unsplash.com/photo-1577083552431-6e5fd01988ec?q=80&w=600&auto=format&fit=crop',
+
+    // ZACATECAS
+    'Feria Nacional de Zacatecas'           => 'https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=600&auto=format&fit=crop',
+    'Festival Cultural Zacatecas'           => 'https://images.unsplash.com/photo-1590930337357-194d21695426?q=80&w=600&auto=format&fit=crop',
+    'Festival de Morismas de Bracho'        => 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=600&auto=format&fit=crop',
+];
+
+try {
+    $stmt = $pdo->prepare("UPDATE mexico_events SET image_url = :img WHERE event_title = :title");
+
+    $count = 0;
+    foreach ($imagenes as $title => $img) {
+        $rows = $stmt->execute([':img' => $img, ':title' => $title]);
+        $count += $stmt->rowCount();
+    }
+
+    echo "✓ Se actualizaron $count eventos con nuevas imágenes.\n";
+
+} catch (PDOException $e) {
+    echo "Error: " . $e->getMessage() . "\n";
+}

@@ -148,6 +148,7 @@ CREATE TABLE `mexico_events` (
   `event_date` date NOT NULL,
   `description` text DEFAULT NULL,
   `image_url` varchar(255) DEFAULT NULL,
+  `audio_url` varchar(255) DEFAULT NULL,
   `official_site_url` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

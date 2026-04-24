@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Star, TrendingUp, Calendar, X, ChevronRight } from 'lucide-react';
+import PopularityChart from './PopularityChart';
 
 export default function TrendingSidebar({ onEventClick }) {
     const [trendingEvents, setTrendingEvents] = useState([]);
@@ -9,22 +10,12 @@ export default function TrendingSidebar({ onEventClick }) {
 
     useEffect(() => {
         const fetchTrending = () => {
-            fetch('http://localhost:8000/mexi-events/api/get_trending.php')
+            fetch(import.meta.env.VITE_API_URL + '/api/get_trending.php')
                 .then(async res => {
                     let text = await res.text();
-                    
-                    // Extract JSON if mixed with HTML/text (like PHP notices)
                     const jsonStartIndex = text.indexOf('{');
-                    if (jsonStartIndex !== -1) {
-                        text = text.substring(jsonStartIndex);
-                    }
-
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        console.error("Trending fetch error: Invalid JSON", text);
-                        return { data: [] };
-                    }
+                    if (jsonStartIndex !== -1) text = text.substring(jsonStartIndex);
+                    try { return JSON.parse(text); } catch (e) { return { data: [] }; }
                 })
                 .then(data => {
                     setTrendingEvents(data.data || []);
@@ -123,7 +114,7 @@ export default function TrendingSidebar({ onEventClick }) {
                                                         </div>
                                                         <div className="flex items-center gap-1 text-xs font-bold text-yellow-400">
                                                             <Star size={12} className="fill-yellow-400" />
-                                                            {event.average_rating.toFixed(1)}
+                                                            {event.average_rating?.toFixed(1)}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -131,6 +122,10 @@ export default function TrendingSidebar({ onEventClick }) {
                                         </div>
                                     </motion.div>
                                 ))}
+
+                                <div className="pt-2">
+                                    <PopularityChart events={trendingEvents} />
+                                </div>
                             </div>
                         </div>
                     </motion.div>

@@ -26,8 +26,8 @@ if ($method !== 'GET') {
             exit;
         }
 
-        $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? '';
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $authHeader = $headers['Authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
     $token = str_replace('Bearer ', '', $authHeader);
 
     if (!$token) {
@@ -107,8 +107,8 @@ function handlePost($pdo) {
     }
 
     try {
-        $sql = "INSERT INTO mexico_events (state_name, event_title, event_date, description, image_url, official_site_url) 
-                VALUES (:state_name, :event_title, :event_date, :description, :image_url, :official_site_url)";
+        $sql = "INSERT INTO mexico_events (state_name, event_title, event_date, description, image_url, audio_url, official_site_url)
+                VALUES (:state_name, :event_title, :event_date, :description, :image_url, :audio_url, :official_site_url)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':state_name' => $data['state_name'],
@@ -116,6 +116,7 @@ function handlePost($pdo) {
             ':event_date' => $data['event_date'],
             ':description' => $data['description'] ?? '',
             ':image_url' => $data['image_url'] ?? '',
+            ':audio_url' => $data['audio_url'] ?? '',
             ':official_site_url' => $data['official_site_url'] ?? ''
         ]);
         
@@ -136,15 +137,16 @@ function handlePut($pdo) {
     }
 
     try {
-        $sql = "UPDATE mexico_events SET 
-                state_name = :state_name, 
-                event_title = :event_title, 
-                event_date = :event_date, 
-                description = :description, 
-                image_url = :image_url, 
-                official_site_url = :official_site_url 
+        $sql = "UPDATE mexico_events SET
+                state_name = :state_name,
+                event_title = :event_title,
+                event_date = :event_date,
+                description = :description,
+                image_url = :image_url,
+                audio_url = :audio_url,
+                official_site_url = :official_site_url
                 WHERE id = :id";
-        
+
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':id' => $data['id'],
@@ -153,6 +155,7 @@ function handlePut($pdo) {
             ':event_date' => $data['event_date'],
             ':description' => $data['description'] ?? '',
             ':image_url' => $data['image_url'] ?? '',
+            ':audio_url' => $data['audio_url'] ?? '',
             ':official_site_url' => $data['official_site_url'] ?? ''
         ]);
 

@@ -92,8 +92,8 @@ if ($method === 'GET') {
 
 } elseif ($method === 'POST') {
     // Save location preference for user
-    $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? '';
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $authHeader = $headers['Authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
     $token = str_replace('Bearer ', '', $authHeader);
 
     if (!$token) {

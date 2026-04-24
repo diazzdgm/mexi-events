@@ -1,13 +1,13 @@
 <?php
 // Configuración de la base de datos
-$host = '127.0.0.1';
+$host = 'sql302.infinityfree.com';
 $port = '3306';
-$dbname = 'mexi_events';
-$username = 'root';
-$password = '';
+$dbname = 'if0_41704572_mexevents';
+$username = 'if0_41704572';
+$password = 'DIMdie94632211';
 
 try {
-    $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
+    $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
     $pdo = new PDO($dsn, $username, $password);
     // ...
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Edit, Plus, X, Save, Upload, Video, Image as ImageIcon, CheckCircle, AlertCircle, Eye, Heart, Star } from 'lucide-react';
+import { Trash2, Edit, Plus, X, Save, Upload, Video, Image as ImageIcon, CheckCircle, AlertCircle, Eye, Heart, Star, Music } from 'lucide-react';
 import { MEXICO_STATES } from '../data/states';
 
 export default function AdminPanel({ onBack }) {
@@ -9,8 +9,10 @@ export default function AdminPanel({ onBack }) {
     const [editingEvent, setEditingEvent] = useState(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState(null); // { id: 123 }
     const [isAdding, setIsAdding] = useState(false);
-    const [dragActive, setDragActive] = useState(false);
+    const [dragActiveMedia, setDragActiveMedia] = useState(false);
+    const [dragActiveAudio, setDragActiveAudio] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [audioUploadProgress, setAudioUploadProgress] = useState(0);
     const [errors, setErrors] = useState({});
     const [viewMode, setViewMode] = useState('list'); // 'list' | 'carousel'
     const [carouselIndex, setCarouselIndex] = useState(0);
@@ -21,6 +23,7 @@ export default function AdminPanel({ onBack }) {
         event_date: '',
         description: '',
         image_url: '',
+        audio_url: '',
         official_site_url: ''
     });
 
@@ -36,7 +39,7 @@ export default function AdminPanel({ onBack }) {
         // But get_events.php is per state.
         // Let's assume events_crud.php will be updated or we fetch stats separately?
         // Actually, for simplicity, I'll update events_crud.php to include stats in the GET list.
-        fetch('http://localhost:8000/mexi-events/api/events_crud.php')
+        fetch(import.meta.env.VITE_API_URL + '/api/events_crud.php')
             .then(res => res.json())
             .then(data => {
                 setEvents(data.data || []);
@@ -55,7 +58,7 @@ export default function AdminPanel({ onBack }) {
         if (name === 'event_title' && !value.trim()) error = 'Event title is required';
         if (name === 'event_date' && !value) error = 'Date is required';
         if (name === 'description' && value.length < 10) error = 'Description must be at least 10 chars';
-        
+
         setErrors(prev => ({ ...prev, [name]: error }));
         return error;
     };
@@ -67,57 +70,59 @@ export default function AdminPanel({ onBack }) {
     };
 
     // --- File Upload ---
-    const handleDrag = (e) => {
+    const handleDrag = (e, targetField = 'image_url') => {
         e.preventDefault();
         e.stopPropagation();
+        const setter = targetField === 'audio_url' ? setDragActiveAudio : setDragActiveMedia;
         if (e.type === 'dragenter' || e.type === 'dragover') {
-            setDragActive(true);
+            setter(true);
         } else if (e.type === 'dragleave') {
-            setDragActive(false);
+            setter(false);
         }
     };
 
-    const handleDrop = (e) => {
+    const handleDrop = (e, targetField = 'image_url') => {
         e.preventDefault();
         e.stopPropagation();
-        setDragActive(false);
+        const setter = targetField === 'audio_url' ? setDragActiveAudio : setDragActiveMedia;
+        setter(false);
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleFile(e.dataTransfer.files[0]);
+            handleFile(e.dataTransfer.files[0], targetField);
         }
     };
 
-    const handleFileSelect = (e) => {
+    const handleFileSelect = (e, targetField = 'image_url') => {
         if (e.target.files && e.target.files[0]) {
-            handleFile(e.target.files[0]);
+            handleFile(e.target.files[0], targetField);
         }
     };
 
-    const handleFile = (file) => {
-        // Clear previous errors
+    const handleFile = (file, targetField = 'image_url') => {
+        const isAudio = targetField === 'audio_url';
+        const progressSetter = isAudio ? setAudioUploadProgress : setUploadProgress;
+
+        // Clear previous errors for this field
         setErrors(prev => {
             const newErrors = { ...prev };
-            delete newErrors.image_url;
+            delete newErrors[targetField];
             return newErrors;
         });
 
-        const formData = new FormData();
-        formData.append('file', file);
+        const body = new FormData();
+        body.append('file', file);
 
         // Simulate progress
-        setUploadProgress(10);
+        progressSetter(10);
         const interval = setInterval(() => {
-            setUploadProgress(prev => Math.min(prev + 10, 90));
+            progressSetter(prev => Math.min(prev + 10, 90));
         }, 100);
 
-        fetch('http://localhost:8000/mexi-events/api/upload.php', {
+        fetch(import.meta.env.VITE_API_URL + '/api/upload.php', {
             method: 'POST',
-            body: formData
+            body
         })
         .then(async res => {
-            // Read raw text
             let text = await res.text();
-            
-            // Extract JSON if mixed with HTML/text
             const jsonStartIndex = text.indexOf('{');
             if (jsonStartIndex !== -1) {
                 text = text.substring(jsonStartIndex);
@@ -139,20 +144,17 @@ export default function AdminPanel({ onBack }) {
         })
         .then(data => {
             clearInterval(interval);
-            setUploadProgress(100);
-            
-            // Update state with the URL
-            setFormData(prev => ({ ...prev, image_url: data.url }));
-            
-            // Clear progress
-            setTimeout(() => setUploadProgress(0), 1000);
+            progressSetter(100);
+
+            setFormData(prev => ({ ...prev, [targetField]: data.url }));
+
+            setTimeout(() => progressSetter(0), 1000);
         })
         .catch(err => {
             clearInterval(interval);
-            setUploadProgress(0);
+            progressSetter(0);
             console.error("Upload error:", err);
-            // Show error in UI instead of alert
-            setErrors(prev => ({ ...prev, image_url: err.message }));
+            setErrors(prev => ({ ...prev, [targetField]: err.message }));
         });
     };
 
@@ -174,7 +176,7 @@ export default function AdminPanel({ onBack }) {
             return;
         }
 
-        fetch(`http://localhost:8000/mexi-events/api/events_crud.php?id=${id}`, {
+        fetch(`${import.meta.env.VITE_API_URL}/api/events_crud.php?id=${id}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -210,6 +212,7 @@ export default function AdminPanel({ onBack }) {
             event_date: '',
             description: '',
             image_url: '',
+            audio_url: '',
             official_site_url: ''
         });
         setIsAdding(true);
@@ -218,14 +221,14 @@ export default function AdminPanel({ onBack }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         // Validate all
         const newErrors = {};
         Object.keys(formData).forEach(key => {
             const err = validateField(key, formData[key]);
             if (err) newErrors[key] = err;
         });
-        
+
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             return;
@@ -240,10 +243,9 @@ export default function AdminPanel({ onBack }) {
 
         const method = isAdding ? 'POST' : 'PUT';
         const body = isAdding ? formData : { ...formData, id: editingEvent.id };
-
-        fetch('http://localhost:8000/mexi-events/api/events_crud.php', {
+        fetch(import.meta.env.VITE_API_URL + '/api/events_crud.php', {
             method: method,
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
@@ -339,7 +341,7 @@ export default function AdminPanel({ onBack }) {
                                         State Name
                                         {errors.state_name && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12}/> {errors.state_name}</span>}
                                     </label>
-                                    <select 
+                                    <select
                                         name="state_name"
                                         value={formData.state_name}
                                         onChange={handleInputChange}
@@ -359,8 +361,8 @@ export default function AdminPanel({ onBack }) {
                                         Event Title
                                         {errors.event_title && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12}/> {errors.event_title}</span>}
                                     </label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="event_title"
                                         value={formData.event_title}
                                         onChange={handleInputChange}
@@ -374,19 +376,19 @@ export default function AdminPanel({ onBack }) {
                                         Date
                                         {errors.event_date && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12}/> {errors.event_date}</span>}
                                     </label>
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         name="event_date"
                                         value={formData.event_date}
                                         onChange={handleInputChange}
                                         className={`w-full bg-slate-900 border rounded-lg p-3 text-white focus:outline-none transition-colors ${errors.event_date ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-mexi-pink'}`}
                                     />
                                 </div>
-                                
+
                                 <div className="group">
                                     <label className="block text-sm font-medium text-gray-400 mb-1">Official Site URL</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="official_site_url"
                                         value={formData.official_site_url}
                                         onChange={handleInputChange}
@@ -413,23 +415,23 @@ export default function AdminPanel({ onBack }) {
                                     placeholder="Paste URL or upload file below..."
                                 />
 
-                                {/* Drag & Drop Area */}
-                                <div 
-                                    className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-all h-48 cursor-pointer ${dragActive ? 'border-mexi-pink bg-mexi-pink/10' : 'border-slate-600 bg-slate-900 hover:border-slate-500'}`}
-                                    onDragEnter={handleDrag}
-                                    onDragLeave={handleDrag}
-                                    onDragOver={handleDrag}
-                                    onDrop={handleDrop}
+                                {/* Drag & Drop Area (Media) */}
+                                <div
+                                    className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-all h-48 cursor-pointer ${dragActiveMedia ? 'border-mexi-pink bg-mexi-pink/10' : 'border-slate-600 bg-slate-900 hover:border-slate-500'}`}
+                                    onDragEnter={(e) => handleDrag(e, 'image_url')}
+                                    onDragLeave={(e) => handleDrag(e, 'image_url')}
+                                    onDragOver={(e) => handleDrag(e, 'image_url')}
+                                    onDrop={(e) => handleDrop(e, 'image_url')}
                                     onClick={() => document.getElementById('file-upload').click()}
                                 >
-                                    <input 
-                                        id="file-upload" 
-                                        type="file" 
-                                        className="hidden" 
+                                    <input
+                                        id="file-upload"
+                                        type="file"
+                                        className="hidden"
                                         accept="image/*,video/*"
-                                        onChange={handleFileSelect}
+                                        onChange={(e) => handleFileSelect(e, 'image_url')}
                                     />
-                                    
+
                                     {formData.image_url ? (
                                         <div className="absolute inset-0 w-full h-full overflow-hidden rounded-xl group">
                                             {formData.image_url.match(/\.(mp4|webm)$/i) ? (
@@ -443,7 +445,7 @@ export default function AdminPanel({ onBack }) {
                                         </div>
                                     ) : (
                                         <>
-                                            <Upload className={`w-10 h-10 mb-3 ${dragActive ? 'text-mexi-pink' : 'text-gray-500'}`} />
+                                            <Upload className={`w-10 h-10 mb-3 ${dragActiveMedia ? 'text-mexi-pink' : 'text-gray-500'}`} />
                                             <p className="text-sm text-gray-400 text-center">
                                                 Drag & Drop or <span className="text-mexi-pink font-semibold">Click to Upload</span>
                                             </p>
@@ -454,9 +456,77 @@ export default function AdminPanel({ onBack }) {
                                     {/* Progress Bar */}
                                     {uploadProgress > 0 && uploadProgress < 100 && (
                                         <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-700">
-                                            <div 
-                                                className="h-full bg-mexi-pink transition-all duration-300" 
+                                            <div
+                                                className="h-full bg-mexi-pink transition-all duration-300"
                                                 style={{ width: `${uploadProgress}%` }}
+                                            ></div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* --- Music/Audio Upload Section --- */}
+                                <label className="block text-sm font-medium text-gray-400 mb-1 mt-2 flex justify-between">
+                                    Music/Audio (MP3)
+                                    {errors.audio_url && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12}/> {errors.audio_url}</span>}
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="audio_url"
+                                    value={formData.audio_url}
+                                    onChange={handleInputChange}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-mexi-pink text-sm mb-2"
+                                    placeholder="Paste MP3 URL or upload file below..."
+                                />
+
+                                <div
+                                    className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-all h-40 cursor-pointer ${dragActiveAudio ? 'border-mexi-pink bg-mexi-pink/10' : 'border-slate-600 bg-slate-900 hover:border-slate-500'}`}
+                                    onDragEnter={(e) => handleDrag(e, 'audio_url')}
+                                    onDragLeave={(e) => handleDrag(e, 'audio_url')}
+                                    onDragOver={(e) => handleDrag(e, 'audio_url')}
+                                    onDrop={(e) => handleDrop(e, 'audio_url')}
+                                    onClick={() => document.getElementById('audio-upload').click()}
+                                >
+                                    <input
+                                        id="audio-upload"
+                                        type="file"
+                                        className="hidden"
+                                        accept="audio/mpeg,.mp3"
+                                        onChange={(e) => handleFileSelect(e, 'audio_url')}
+                                    />
+
+                                    {formData.audio_url ? (
+                                        <div className="w-full flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center gap-2 text-mexi-pink">
+                                                <Music size={24} />
+                                                <span className="text-sm font-medium truncate max-w-[200px]">
+                                                    {formData.audio_url.split('/').pop()}
+                                                </span>
+                                            </div>
+                                            <audio src={formData.audio_url} controls className="w-full max-w-sm" />
+                                            <button
+                                                type="button"
+                                                onClick={() => document.getElementById('audio-upload').click()}
+                                                className="text-xs text-gray-400 hover:text-mexi-pink flex items-center gap-1"
+                                            >
+                                                <Edit size={12}/> Change Audio
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Music className={`w-10 h-10 mb-3 ${dragActiveAudio ? 'text-mexi-pink' : 'text-gray-500'}`} />
+                                            <p className="text-sm text-gray-400 text-center">
+                                                Drag & Drop MP3 or <span className="text-mexi-pink font-semibold">Click to Upload</span>
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-2">MP3 only (max 50MB)</p>
+                                        </>
+                                    )}
+
+                                    {audioUploadProgress > 0 && audioUploadProgress < 100 && (
+                                        <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-700">
+                                            <div
+                                                className="h-full bg-mexi-pink transition-all duration-300"
+                                                style={{ width: `${audioUploadProgress}%` }}
                                             ></div>
                                         </div>
                                     )}

@@ -13,7 +13,7 @@ export default function LandingPage({ onExplore, onSelectState }) {
     const statesToFetch = ['Guanajuato', 'Oaxaca', 'Mexico City'];
     
     Promise.all(statesToFetch.map(state => 
-      fetch(`http://localhost/mexi-events/api/get_events.php?state=${encodeURIComponent(state)}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/get_events.php?state=${encodeURIComponent(state)}`)
         .then(res => res.json())
         .then(data => data.data ? data.data[0] : null)
     ))

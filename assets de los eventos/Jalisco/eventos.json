@@ -1,0 +1,18 @@
+[
+  {
+    "title": "Festival Internacional del Mariachi",
+    "description": "El festival más grande de mariachi en el mundo, con presentaciones en vivo y actividades culturales.",
+    "date": "2026-09-01",
+    "location": "Plaza de Armas, Guadalajara",
+    "category": "Cultura",
+    "image": "festival_mariachi.jpg"
+  },
+  {
+    "title": "Feria de Tlaquepaque",
+    "description": "Artesanías, gastronomía típica jalisciense y shows en vivo durante todo el fin de semana.",
+    "date": "2026-10-15",
+    "location": "Tlaquepaque, Jalisco",
+    "category": "Feria",
+    "image": "feria_tlaquepaque.jpg"
+  }
+]

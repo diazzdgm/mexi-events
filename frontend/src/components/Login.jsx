@@ -36,9 +36,9 @@ export default function Login({ onLogin, onCancel }) {
 
         setLoading(true);
 
-        const endpoint = isRegistering 
-            ? 'http://localhost/mexi-events/api/register.php'
-            : 'http://localhost/mexi-events/api/login.php';
+        const endpoint = isRegistering
+            ? import.meta.env.VITE_API_URL + '/api/register.php'
+            : import.meta.env.VITE_API_URL + '/api/login.php';
 
         try {
             const response = await fetch(endpoint, {

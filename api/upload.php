@@ -34,7 +34,7 @@ $fileError = $file['error'];
 $fileType = $file['type'];
 
 $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-$allowed = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm'];
+$allowed = ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'mp3'];
 
 // Use finfo to check MIME type server-side
 $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -46,7 +46,8 @@ $allowedMimes = [
     'png' => 'image/png',
     'gif' => 'image/gif',
     'mp4' => 'video/mp4',
-    'webm' => 'video/webm'
+    'webm' => 'video/webm',
+    'mp3' => 'audio/mpeg'
 ];
 
 if (!in_array($fileExt, $allowed)) {
@@ -68,6 +69,10 @@ if (array_key_exists($fileExt, $allowedMimes)) {
     // Handle generic video/octet-stream edge cases
     elseif (strpos($mimeType, 'video/') === 0 && strpos($fileType, 'video/') === 0) {
         // If both finfo and browser say it's video, trust it (slightly risky but better UX)
+        $isValid = true;
+    }
+    // Trust .mp3 extension regardless of detected MIME (some browsers/finfo report application/octet-stream)
+    elseif ($fileExt === 'mp3') {
         $isValid = true;
     }
 }
@@ -104,7 +109,13 @@ if (!$isValid) {
                 $host = $_SERVER['HTTP_HOST'];
                 $url = "$protocol://$host/mexi-events/public/uploads/$fileNameNew";
                 
-                echo json_encode(['success' => true, 'url' => $url, 'type' => strpos($fileType, 'video') !== false ? 'video' : 'image']);
+                $responseType = 'image';
+                if (strpos($fileType, 'video') !== false || in_array($fileExt, ['mp4', 'webm'])) {
+                    $responseType = 'video';
+                } elseif (strpos($fileType, 'audio') !== false || $fileExt === 'mp3') {
+                    $responseType = 'audio';
+                }
+                echo json_encode(['success' => true, 'url' => $url, 'type' => $responseType]);
             } else {
                 http_response_code(500);
                 echo json_encode(['error' => 'Failed to move uploaded file. Check permissions or path. Path: ' . $fileDestination]);

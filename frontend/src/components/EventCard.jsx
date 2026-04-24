@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, MessageSquare, Send, Maximize2, Minimize2, User, ExternalLink, Heart } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, ChevronLeft, ChevronRight, MessageSquare, Send, Maximize2, Minimize2, User, ExternalLink, Heart, Play, Pause, Volume2, VolumeX, Music } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StarRating from './StarRating';
 import { SoundManager } from '../utils/SoundManager';
@@ -18,6 +18,25 @@ export default function EventCard({ event, position, visible, loading, error, on
     const [avgRating, setAvgRating] = useState(0);
     const [ratingCount, setRatingCount] = useState(0);
     const [userRating, setUserRating] = useState(0);
+
+    // Video refs and state
+    const expandedVideoRef = useRef(null);
+    const cardVideoRef = useRef(null);
+    const [isExpPlaying, setIsExpPlaying] = useState(true);
+    const [isExpMuted, setIsExpMuted] = useState(true);
+    const [expProgress, setExpProgress] = useState(0);
+    const [expDuration, setExpDuration] = useState(0);
+    const [expCurrentTime, setExpCurrentTime] = useState(0);
+    const [isCardPlaying, setIsCardPlaying] = useState(true);
+
+    // Audio refs and state
+    const expandedAudioRef = useRef(null);
+    const cardAudioRef = useRef(null);
+    const [isCardAudioPlaying, setIsCardAudioPlaying] = useState(false);
+    const [isExpAudioPlaying, setIsExpAudioPlaying] = useState(false);
+    const [expAudioProgress, setExpAudioProgress] = useState(0);
+    const [expAudioDuration, setExpAudioDuration] = useState(0);
+    const [expAudioCurrentTime, setExpAudioCurrentTime] = useState(0);
 
     // Normalize events
     const eventsList = Array.isArray(event) ? event : (event ? [event] : []);
@@ -75,7 +94,7 @@ export default function EventCard({ event, position, visible, loading, error, on
         setLikesCount(prev => newLiked ? prev + 1 : prev - 1);
 
         const token = localStorage.getItem('mexi_token');
-        fetch('http://localhost/mexi-events/api/interact.php', {
+        fetch(import.meta.env.VITE_API_URL + '/api/interact.php', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -111,7 +130,7 @@ export default function EventCard({ event, position, visible, loading, error, on
         setUserRating(rating);
 
         const token = localStorage.getItem('mexi_token');
-        fetch('http://localhost/mexi-events/api/interact.php', {
+        fetch(import.meta.env.VITE_API_URL + '/api/interact.php', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -130,7 +149,7 @@ export default function EventCard({ event, position, visible, loading, error, on
 
     const fetchComments = (eventId) => {
         setCommentsLoading(true);
-        fetch(`http://localhost/mexi-events/api/comments.php?event_id=${eventId}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/comments.php?event_id=${eventId}`)
             .then(res => res.json())
             .then(data => {
                 setComments(data.data || []);
@@ -159,7 +178,7 @@ export default function EventCard({ event, position, visible, loading, error, on
 
         const token = localStorage.getItem('mexi_token');
 
-        fetch('http://localhost/mexi-events/api/comments.php', {
+        fetch(import.meta.env.VITE_API_URL + '/api/comments.php', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -184,6 +203,106 @@ export default function EventCard({ event, position, visible, loading, error, on
         .catch(() => {
             setComments(prev => prev.filter(c => c.id !== optimisticComment.id));
         });
+    };
+
+    // Video control handlers
+    const toggleExpandedPlay = () => {
+        const video = expandedVideoRef.current;
+        if (!video) return;
+        if (video.paused) { video.play(); setIsExpPlaying(true); }
+        else { video.pause(); setIsExpPlaying(false); }
+    };
+
+    const toggleMute = () => {
+        const video = expandedVideoRef.current;
+        if (!video) return;
+        video.muted = !video.muted;
+        setIsExpMuted(video.muted);
+    };
+
+    const handleTimeUpdate = () => {
+        const video = expandedVideoRef.current;
+        if (!video) return;
+        setExpCurrentTime(video.currentTime);
+        setExpProgress(video.duration ? (video.currentTime / video.duration) * 100 : 0);
+    };
+
+    const handleLoadedMetadata = () => {
+        const video = expandedVideoRef.current;
+        if (!video) return;
+        setExpDuration(video.duration);
+    };
+
+    const handleProgressClick = (e) => {
+        const video = expandedVideoRef.current;
+        if (!video) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        video.currentTime = pct * video.duration;
+    };
+
+    const formatTime = (seconds) => {
+        if (!seconds || isNaN(seconds)) return '0:00';
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const getYouTubeEmbedUrl = (url) => {
+        if (!url) return null;
+        const patterns = [
+            /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+        ];
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) return `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1`;
+        }
+        return null;
+    };
+
+    const toggleCardPlay = (e) => {
+        e.stopPropagation();
+        const video = cardVideoRef.current;
+        if (!video) return;
+        if (video.paused) { video.play(); setIsCardPlaying(true); }
+        else { video.pause(); setIsCardPlaying(false); }
+    };
+
+    // --- Audio control handlers ---
+    const toggleCardAudioPlay = (e) => {
+        e.stopPropagation();
+        const audio = cardAudioRef.current;
+        if (!audio) return;
+        if (audio.paused) { audio.play(); setIsCardAudioPlaying(true); }
+        else { audio.pause(); setIsCardAudioPlaying(false); }
+    };
+
+    const toggleExpandedAudioPlay = () => {
+        const audio = expandedAudioRef.current;
+        if (!audio) return;
+        if (audio.paused) { audio.play(); setIsExpAudioPlaying(true); }
+        else { audio.pause(); setIsExpAudioPlaying(false); }
+    };
+
+    const handleAudioTimeUpdate = () => {
+        const audio = expandedAudioRef.current;
+        if (!audio) return;
+        setExpAudioCurrentTime(audio.currentTime);
+        setExpAudioProgress(audio.duration ? (audio.currentTime / audio.duration) * 100 : 0);
+    };
+
+    const handleAudioLoadedMetadata = () => {
+        const audio = expandedAudioRef.current;
+        if (!audio) return;
+        setExpAudioDuration(audio.duration);
+    };
+
+    const handleAudioProgressClick = (e) => {
+        const audio = expandedAudioRef.current;
+        if (!audio) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        audio.currentTime = pct * audio.duration;
     };
 
     if (!visible) return null;
@@ -227,12 +346,77 @@ export default function EventCard({ event, position, visible, loading, error, on
                     {/* Left: Media & Details */}
                     <div className="w-full md:w-2/3 h-1/2 md:h-full flex flex-col relative bg-black">
                         <div className="flex-1 relative overflow-hidden group">
-                             {currentEvent.image_url && currentEvent.image_url.match(/\.(mp4|webm)$/i) ? (
-                                <video src={currentEvent.image_url} className="w-full h-full object-contain bg-black" controls autoPlay />
+                             {currentEvent.image_url && getYouTubeEmbedUrl(currentEvent.image_url) ? (
+                                <iframe
+                                    src={getYouTubeEmbedUrl(currentEvent.image_url)}
+                                    className="w-full h-full"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    title={currentEvent.event_title}
+                                />
+                            ) : currentEvent.image_url && currentEvent.image_url.match(/\.(mp4|webm)$/i) ? (
+                                <video
+                                    ref={expandedVideoRef}
+                                    src={currentEvent.image_url}
+                                    className="w-full h-full object-contain bg-black cursor-pointer"
+                                    autoPlay
+                                    muted
+                                    onClick={toggleExpandedPlay}
+                                    onTimeUpdate={handleTimeUpdate}
+                                    onLoadedMetadata={handleLoadedMetadata}
+                                    onPlay={() => setIsExpPlaying(true)}
+                                    onPause={() => setIsExpPlaying(false)}
+                                />
+                            ) : currentEvent.audio_url ? (
+                                <div className="w-full h-full bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex items-start justify-center px-8 pt-12">
+                                    <div className="flex flex-col items-center gap-6 w-full max-w-md">
+                                        <div className="w-40 h-40 rounded-full bg-gradient-to-br from-mexi-pink to-purple-600 flex items-center justify-center shadow-2xl">
+                                            <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center">
+                                                <Music size={36} className="text-mexi-pink" />
+                                            </div>
+                                        </div>
+                                        <audio
+                                            ref={expandedAudioRef}
+                                            src={currentEvent.audio_url}
+                                            onTimeUpdate={handleAudioTimeUpdate}
+                                            onLoadedMetadata={handleAudioLoadedMetadata}
+                                            onPlay={() => setIsExpAudioPlaying(true)}
+                                            onPause={() => setIsExpAudioPlaying(false)}
+                                            autoPlay
+                                        />
+                                        <div className="w-full flex flex-col gap-3">
+                                            <div
+                                                className="w-full h-2 bg-slate-700 rounded-full cursor-pointer relative group/bar"
+                                                onClick={handleAudioProgressClick}
+                                            >
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-mexi-pink to-purple-500 rounded-full pointer-events-none"
+                                                    style={{ width: `${expAudioProgress}%` }}
+                                                />
+                                                <div
+                                                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none"
+                                                    style={{ left: `calc(${expAudioProgress}% - 8px)` }}
+                                                />
+                                            </div>
+                                            <div className="flex justify-between text-xs text-gray-400 font-mono">
+                                                <span>{formatTime(expAudioCurrentTime)}</span>
+                                                <span>{formatTime(expAudioDuration)}</span>
+                                            </div>
+                                            <div className="flex justify-center mt-2">
+                                                <button
+                                                    onClick={toggleExpandedAudioPlay}
+                                                    className="w-16 h-16 rounded-full bg-gradient-to-r from-mexi-pink to-purple-600 hover:scale-105 active:scale-95 transition-transform flex items-center justify-center shadow-xl"
+                                                >
+                                                    {isExpAudioPlaying ? <Pause size={28} className="text-white" /> : <Play size={28} className="text-white ml-1" />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             ) : (
-                                <img 
-                                    src={currentEvent.image_url || 'https://via.placeholder.com/800'} 
-                                    alt={currentEvent.event_title} 
+                                <img
+                                    src={currentEvent.image_url || 'https://via.placeholder.com/800'}
+                                    alt={currentEvent.event_title}
                                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                 />
                             )}
@@ -290,6 +474,34 @@ export default function EventCard({ event, position, visible, loading, error, on
                                 )}
                             </div>
                         </div>
+
+                        {/* Video Controls Bar */}
+                        {currentEvent.image_url && currentEvent.image_url.match(/\.(mp4|webm)$/i) && !getYouTubeEmbedUrl(currentEvent.image_url) && (
+                            <div className="bg-black/95 px-4 py-2 flex items-center gap-3 border-t border-slate-700 shrink-0">
+                                <button onClick={toggleExpandedPlay} className="text-white hover:text-mexi-pink transition-colors">
+                                    {isExpPlaying ? <Pause size={20} /> : <Play size={20} />}
+                                </button>
+                                <div
+                                    className="flex-1 h-1.5 bg-slate-600 rounded-full cursor-pointer relative group/bar"
+                                    onClick={handleProgressClick}
+                                >
+                                    <div
+                                        className="h-full bg-mexi-pink rounded-full pointer-events-none"
+                                        style={{ width: `${expProgress}%` }}
+                                    />
+                                    <div
+                                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none"
+                                        style={{ left: `calc(${expProgress}% - 6px)` }}
+                                    />
+                                </div>
+                                <span className="text-xs text-gray-400 font-mono whitespace-nowrap">
+                                    {formatTime(expCurrentTime)} / {formatTime(expDuration)}
+                                </span>
+                                <button onClick={toggleMute} className="text-white hover:text-mexi-pink transition-colors">
+                                    {isExpMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                                </button>
+                            </div>
+                        )}
 
                          {/* Carousel Controls (Expanded) */}
                          {eventsList.length > 1 && (
@@ -408,12 +620,59 @@ export default function EventCard({ event, position, visible, loading, error, on
                             className="cursor-pointer group/card"
                         >
                             <div className="w-full h-40 mb-3 overflow-hidden rounded-lg bg-slate-800 relative group">
-                                {currentEvent.image_url && currentEvent.image_url.match(/\.(mp4|webm)$/i) ? (
-                                    <video src={currentEvent.image_url} className="w-full h-full object-cover" autoPlay muted loop />
+                                {currentEvent.image_url && getYouTubeEmbedUrl(currentEvent.image_url) ? (
+                                    <>
+                                        <img
+                                            src={`https://img.youtube.com/vi/${currentEvent.image_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1]}/hqdefault.jpg`}
+                                            alt={currentEvent.event_title}
+                                            className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="bg-red-600 rounded-full p-3 shadow-lg">
+                                                <Play size={20} className="text-white fill-white" />
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : currentEvent.image_url && currentEvent.image_url.match(/\.(mp4|webm)$/i) ? (
+                                    <>
+                                        <video
+                                            ref={cardVideoRef}
+                                            src={currentEvent.image_url}
+                                            className="w-full h-full object-cover"
+                                            autoPlay muted loop
+                                            onPlay={() => setIsCardPlaying(true)}
+                                            onPause={() => setIsCardPlaying(false)}
+                                        />
+                                        <button
+                                            onClick={toggleCardPlay}
+                                            className="absolute bottom-2 right-2 z-10 p-1.5 bg-black/60 hover:bg-mexi-pink text-white rounded-full transition-colors"
+                                        >
+                                            {isCardPlaying ? <Pause size={14} /> : <Play size={14} />}
+                                        </button>
+                                    </>
+                                ) : currentEvent.audio_url ? (
+                                    <div className="w-full h-full bg-gradient-to-br from-mexi-pink/40 via-purple-800/60 to-slate-900 flex items-center justify-center relative">
+                                        <div className="w-20 h-20 rounded-full bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
+                                            <Music size={40} className="text-white/80" />
+                                        </div>
+                                        <audio
+                                            ref={cardAudioRef}
+                                            src={currentEvent.audio_url}
+                                            onPlay={() => setIsCardAudioPlaying(true)}
+                                            onPause={() => setIsCardAudioPlaying(false)}
+                                            onEnded={() => setIsCardAudioPlaying(false)}
+                                        />
+                                        <button
+                                            onClick={toggleCardAudioPlay}
+                                            className="absolute bottom-2 right-2 z-10 p-1.5 bg-black/60 hover:bg-mexi-pink text-white rounded-full transition-colors"
+                                        >
+                                            {isCardAudioPlaying ? <Pause size={14} /> : <Play size={14} />}
+                                        </button>
+                                    </div>
                                 ) : (
-                                    <img 
-                                        src={currentEvent.image_url || 'https://via.placeholder.com/300'} 
-                                        alt={currentEvent.event_title} 
+                                    <img
+                                        src={currentEvent.image_url || 'https://via.placeholder.com/300'}
+                                        alt={currentEvent.event_title}
                                         className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
                                         onError={(e) => {e.target.src = 'https://via.placeholder.com/300?text=No+Image'}}
                                     />

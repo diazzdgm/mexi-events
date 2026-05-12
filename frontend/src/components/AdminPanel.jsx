@@ -253,14 +253,14 @@ export default function AdminPanel({ onBack }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 text-white flex">
-            <aside className="w-64 bg-slate-800 border-r border-slate-700 p-6 flex flex-col fixed h-full z-20">
-                <h1 className="text-2xl font-bold text-mexi-pink mb-8">Admin Panel</h1>
-                
-                <nav className="flex-1 space-y-2">
-                    <button 
+        <div className="min-h-screen bg-slate-900 text-white flex flex-col md:flex-row">
+            <aside className="w-full md:w-64 bg-slate-800 border-b md:border-b-0 md:border-r border-slate-700 p-4 md:p-6 flex flex-col md:fixed md:h-full z-20">
+                <h1 className="text-xl md:text-2xl font-bold text-mexi-pink mb-3 md:mb-8">Admin Panel</h1>
+
+                <nav className="flex flex-row md:flex-col gap-2 md:space-y-2 md:flex-1 overflow-x-auto md:overflow-visible -mx-1 px-1">
+                    <button
                         onClick={() => { setViewMode('list'); setIsAdding(false); setEditingEvent(null); }}
-                        className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${viewMode === 'list' && !isAdding && !editingEvent ? 'bg-mexi-pink text-white' : 'hover:bg-slate-700 text-gray-300'}`}
+                        className={`shrink-0 md:w-full text-left px-3 md:px-4 py-2 md:py-3 rounded-lg flex items-center gap-2 md:gap-3 transition-colors whitespace-nowrap ${viewMode === 'list' && !isAdding && !editingEvent ? 'bg-mexi-pink text-white' : 'hover:bg-slate-700 text-gray-300'}`}
                     >
                         <div className="w-5 h-5 grid grid-cols-2 gap-0.5">
                             <div className="bg-current rounded-[1px]"></div>
@@ -268,33 +268,37 @@ export default function AdminPanel({ onBack }) {
                             <div className="bg-current rounded-[1px]"></div>
                             <div className="bg-current rounded-[1px]"></div>
                         </div>
-                        Events List
-                    </button>
-                    
-                    <button 
-                        onClick={() => { setViewMode('carousel'); setIsAdding(false); setEditingEvent(null); }}
-                        className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${viewMode === 'carousel' ? 'bg-mexi-pink text-white' : 'hover:bg-slate-700 text-gray-300'}`}
-                    >
-                        <Eye size={20} />
-                        Preview Carousel
+                        <span className="text-sm md:text-base">Events List</span>
                     </button>
 
-                    <button 
+                    <button
+                        onClick={() => { setViewMode('carousel'); setIsAdding(false); setEditingEvent(null); }}
+                        className={`shrink-0 md:w-full text-left px-3 md:px-4 py-2 md:py-3 rounded-lg flex items-center gap-2 md:gap-3 transition-colors whitespace-nowrap ${viewMode === 'carousel' ? 'bg-mexi-pink text-white' : 'hover:bg-slate-700 text-gray-300'}`}
+                    >
+                        <Eye size={20} />
+                        <span className="text-sm md:text-base">Preview Carousel</span>
+                    </button>
+
+                    <button
                         onClick={handleAdd}
-                        className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${isAdding ? 'bg-mexi-pink text-white' : 'hover:bg-slate-700 text-gray-300'}`}
+                        className={`shrink-0 md:w-full text-left px-3 md:px-4 py-2 md:py-3 rounded-lg flex items-center gap-2 md:gap-3 transition-colors whitespace-nowrap ${isAdding ? 'bg-mexi-pink text-white' : 'hover:bg-slate-700 text-gray-300'}`}
                     >
                         <Plus size={20} />
-                        Add New Event
+                        <span className="text-sm md:text-base">Add New Event</span>
+                    </button>
+
+                    <button onClick={onBack} className="md:hidden shrink-0 px-3 py-2 border border-slate-600 rounded-lg hover:bg-slate-700 text-gray-400 hover:text-white transition whitespace-nowrap text-sm">
+                        Back to Map
                     </button>
                 </nav>
 
-                <button onClick={onBack} className="mt-auto w-full px-4 py-2 border border-slate-600 rounded hover:bg-slate-700 text-gray-400 hover:text-white transition">
+                <button onClick={onBack} className="hidden md:block mt-auto w-full px-4 py-2 border border-slate-600 rounded hover:bg-slate-700 text-gray-400 hover:text-white transition">
                     Back to Map
                 </button>
             </aside>
-            <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
-                <header className="flex justify-between items-center mb-8">
-                    <h2 className="text-3xl font-bold text-white">
+            <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto md:h-screen">
+                <header className="flex justify-between items-center mb-4 md:mb-8">
+                    <h2 className="text-2xl md:text-3xl font-bold text-white">
                         {isAdding ? 'Create New Event' : editingEvent ? 'Edit Event' : viewMode === 'carousel' ? 'Destinations Preview' : 'Manage Events'}
                     </h2>
                 </header>
@@ -351,7 +355,9 @@ export default function AdminPanel({ onBack }) {
                                         name="event_date"
                                         value={formData.event_date}
                                         onChange={handleInputChange}
-                                        className={`w-full bg-slate-900 border rounded-lg p-3 text-white focus:outline-none transition-colors ${errors.event_date ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-mexi-pink'}`}
+                                        onClick={(e) => e.currentTarget.showPicker?.()}
+                                        onFocus={(e) => e.currentTarget.showPicker?.()}
+                                        className={`w-full bg-slate-900 border rounded-lg p-3 text-white focus:outline-none transition-colors cursor-pointer ${errors.event_date ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-mexi-pink'}`}
                                     />
                                 </div>
 
@@ -533,23 +539,23 @@ export default function AdminPanel({ onBack }) {
                         <table className="w-full text-left">
                             <thead className="bg-slate-900/50 text-gray-400 uppercase text-xs font-semibold tracking-wider">
                                 <tr>
-                                    <th className="p-6">Media</th>
-                                    <th className="p-6">Event Details</th>
-                                    <th className="p-6">Stats</th>
-                                    <th className="p-6">Date</th>
-                                    <th className="p-6 text-right">Actions</th>
+                                    <th className="p-3 md:p-6">Media</th>
+                                    <th className="p-3 md:p-6">Event Details</th>
+                                    <th className="hidden md:table-cell md:p-6">Stats</th>
+                                    <th className="hidden md:table-cell md:p-6">Date</th>
+                                    <th className="p-3 md:p-6 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-700">
                                 {loading ? (
-                                    <tr><td colSpan="4" className="p-12 text-center text-gray-500">Loading events...</td></tr>
+                                    <tr><td colSpan="5" className="p-12 text-center text-gray-500">Loading events...</td></tr>
                                 ) : events.length === 0 ? (
-                                    <tr><td colSpan="4" className="p-12 text-center text-gray-500">No events found. Start by adding one!</td></tr>
+                                    <tr><td colSpan="5" className="p-12 text-center text-gray-500">No events found. Start by adding one!</td></tr>
                                 ) : (
                                     events.map(event => (
                                         <tr key={event.id} className="hover:bg-slate-700/30 transition-colors group">
-                                            <td className="p-6 w-32">
-                                                <div className="w-20 h-14 rounded-lg overflow-hidden bg-slate-900 border border-slate-700">
+                                            <td className="p-3 md:p-6 w-16 md:w-32">
+                                                <div className="w-14 h-10 md:w-20 md:h-14 rounded-lg overflow-hidden bg-slate-900 border border-slate-700">
                                                     {event.image_url ? (
                                                         event.image_url.match(/\.(mp4|webm)$/i) ? (
                                                             <video src={event.image_url} className="w-full h-full object-cover" />
@@ -561,12 +567,13 @@ export default function AdminPanel({ onBack }) {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="p-6">
-                                                <h3 className="font-bold text-white text-lg">{event.event_title}</h3>
-                                                <span className="text-sm text-mexi-pink font-medium">{event.state_name}</span>
-                                                <p className="text-sm text-gray-400 mt-1 line-clamp-1">{event.description}</p>
+                                            <td className="p-3 md:p-6">
+                                                <h3 className="font-bold text-white text-sm md:text-lg line-clamp-2">{event.event_title}</h3>
+                                                <span className="text-xs md:text-sm text-mexi-pink font-medium">{event.state_name}</span>
+                                                <p className="hidden md:block text-sm text-gray-400 mt-1 line-clamp-1">{event.description}</p>
+                                                <p className="md:hidden text-xs text-gray-400 mt-1 font-mono">{event.event_date}</p>
                                             </td>
-                                            <td className="p-6">
+                                            <td className="hidden md:table-cell md:p-6">
                                                 <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2 text-mexi-pink font-bold">
                                                         <Heart size={16} className="fill-mexi-pink" />
@@ -578,9 +585,9 @@ export default function AdminPanel({ onBack }) {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="p-6 text-gray-400 font-mono text-sm">{event.event_date}</td>
-                                            <td className="p-6 text-right">
-                                                <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                            <td className="hidden md:table-cell md:p-6 text-gray-400 font-mono text-sm">{event.event_date}</td>
+                                            <td className="p-3 md:p-6 text-right">
+                                                <div className="flex flex-col md:flex-row justify-end gap-2 md:opacity-60 md:group-hover:opacity-100 transition-opacity">
                                                     <button onClick={() => handleEdit(event)} className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors" title="Edit">
                                                         <Edit size={18} />
                                                     </button>

@@ -31,6 +31,7 @@ export default function EventCard({ event, position, visible, loading, error, on
     const [expAudioProgress, setExpAudioProgress] = useState(0);
     const [expAudioDuration, setExpAudioDuration] = useState(0);
     const [expAudioCurrentTime, setExpAudioCurrentTime] = useState(0);
+    const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 640);
     const eventsList = Array.isArray(event) ? event : (event ? [event] : []);
     const currentEvent = eventsList[currentIndex];
     useEffect(() => {
@@ -38,6 +39,12 @@ export default function EventCard({ event, position, visible, loading, error, on
             setCurrentIndex(0);
         }
     }, [eventsList, currentIndex]);
+
+    useEffect(() => {
+        const onResize = () => setIsMobile(window.innerWidth < 640);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('mexi_user');
@@ -283,11 +290,19 @@ export default function EventCard({ event, position, visible, loading, error, on
     if (!visible) return null;
     const isRight = position.x < window.innerWidth / 2;
     const isBottom = position.y > window.innerHeight / 2;
-    
-    const miniCardStyle = {
-        [isRight ? 'left' : 'right']: isRight ? position.x + 30 : window.innerWidth - position.x + 30,
-        [isBottom ? 'bottom' : 'top']: isBottom ? window.innerHeight - position.y + 10 : position.y + 10,
-    };
+
+    const miniCardStyle = isMobile
+        ? {
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            maxHeight: 'calc(100vh - 2rem)',
+            overflowY: 'auto',
+        }
+        : {
+            [isRight ? 'left' : 'right']: isRight ? position.x + 30 : window.innerWidth - position.x + 30,
+            [isBottom ? 'bottom' : 'top']: isBottom ? window.innerHeight - position.y + 10 : position.y + 10,
+        };
 
     const nextSlide = (e) => {
         e?.stopPropagation();
@@ -300,12 +315,12 @@ export default function EventCard({ event, position, visible, loading, error, on
     };
     if (isExpanded && currentEvent) {
         return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 md:p-8">
-                <motion.div 
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md md:p-8">
+                <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className="bg-slate-900 w-full max-w-6xl h-[90vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row border border-slate-700 relative"
+                    className="bg-slate-900 w-full h-full max-w-6xl md:h-[90vh] md:rounded-2xl overflow-y-auto md:overflow-hidden shadow-2xl flex flex-col md:flex-row md:border border-slate-700 relative"
                 >
                     <button 
                         onClick={() => setIsExpanded(false)}
@@ -313,8 +328,8 @@ export default function EventCard({ event, position, visible, loading, error, on
                     >
                         <Minimize2 size={24} />
                     </button>
-                    <div className="w-full md:w-2/3 h-1/2 md:h-full flex flex-col relative bg-black">
-                        <div className="flex-1 relative overflow-hidden group">
+                    <div className="w-full md:w-2/3 md:h-full flex flex-col relative bg-black">
+                        <div className="aspect-video md:aspect-auto md:flex-1 relative overflow-hidden group">
                              {currentEvent.image_url && getYouTubeEmbedUrl(currentEvent.image_url) ? (
                                 <iframe
                                     src={getYouTubeEmbedUrl(currentEvent.image_url)}
@@ -389,9 +404,9 @@ export default function EventCard({ event, position, visible, loading, error, on
                                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                 />
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent pointer-events-none"></div>
-                            
-                            <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
+                            <div className="hidden md:block absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent pointer-events-none"></div>
+
+                            <div className="hidden md:block absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
                                 <h1 className="text-4xl md:text-5xl font-black text-white mb-2 drop-shadow-lg">{currentEvent.event_title}</h1>
                                 <div className="flex items-center gap-4 text-mexi-pink font-bold uppercase tracking-widest mb-4">
                                     <span>{currentEvent.state_name}</span>
@@ -442,6 +457,59 @@ export default function EventCard({ event, position, visible, loading, error, on
                                     </a>
                                 )}
                             </div>
+                            {eventsList.length > 1 && (
+                                <>
+                                    <button onClick={prevSlide} className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 p-2 md:p-3 bg-black/50 hover:bg-mexi-pink text-white rounded-full backdrop-blur-sm transition-all">
+                                        <ChevronLeft size={24} className="md:hidden" />
+                                        <ChevronLeft size={32} className="hidden md:block" />
+                                    </button>
+                                    <button onClick={nextSlide} className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 p-2 md:p-3 bg-black/50 hover:bg-mexi-pink text-white rounded-full backdrop-blur-sm transition-all">
+                                        <ChevronRight size={24} className="md:hidden" />
+                                        <ChevronRight size={32} className="hidden md:block" />
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                        <div className="md:hidden p-4 bg-slate-900">
+                            <h1 className="text-2xl font-black text-white mb-2 leading-tight">{currentEvent.event_title}</h1>
+                            <div className="flex items-center gap-2 text-mexi-pink font-bold uppercase tracking-wider text-xs mb-4">
+                                <span>{currentEvent.state_name}</span>
+                                <span>•</span>
+                                <span>{currentEvent.event_date}</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 mb-4">
+                                <button
+                                    onClick={handleLike}
+                                    className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-700 px-3 py-2 rounded-full transition-all group/like"
+                                >
+                                    <Heart
+                                        size={18}
+                                        className={`transition-colors ${isLiked ? "fill-mexi-pink text-mexi-pink" : "text-white group-hover/like:text-mexi-pink"}`}
+                                    />
+                                    <span className="text-white font-bold text-sm">{likesCount}</span>
+                                </button>
+                                <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-2 rounded-full">
+                                    <span className="text-white font-bold text-sm">{avgRating.toFixed(1)}</span>
+                                    <StarRating rating={avgRating} readonly={true} size={14} count={ratingCount} />
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 mb-4 bg-slate-800/50 px-3 py-2 rounded-full w-fit">
+                                <span className="text-xs text-gray-400 uppercase font-bold">Your Rating:</span>
+                                <StarRating rating={userRating} onRate={handleRate} size={18} />
+                            </div>
+                            <p className="text-gray-300 text-base leading-relaxed mb-4">
+                                {currentEvent.description}
+                            </p>
+                            {currentEvent.official_site_url && (
+                                <a
+                                    href={currentEvent.official_site_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-mexi-pink to-purple-600 text-white rounded-full font-bold text-sm shadow-lg shadow-pink-900/30 transition-all active:scale-95"
+                                >
+                                    Visit Official Site <ExternalLink size={16} />
+                                </a>
+                            )}
                         </div>
                         {currentEvent.image_url && currentEvent.image_url.match(/\.(mp4|webm)$/i) && !getYouTubeEmbedUrl(currentEvent.image_url) && (
                             <div className="bg-black/95 px-4 py-2 flex items-center gap-3 border-t border-slate-700 shrink-0">
@@ -469,25 +537,15 @@ export default function EventCard({ event, position, visible, loading, error, on
                                 </button>
                             </div>
                         )}
-                         {eventsList.length > 1 && (
-                            <>
-                                <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-mexi-pink text-white rounded-full backdrop-blur-sm transition-all">
-                                    <ChevronLeft size={32} />
-                                </button>
-                                <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-mexi-pink text-white rounded-full backdrop-blur-sm transition-all">
-                                    <ChevronRight size={32} />
-                                </button>
-                            </>
-                        )}
                     </div>
-                    <div className="w-full md:w-1/3 h-1/2 md:h-full bg-slate-800 border-l border-slate-700 flex flex-col">
-                        <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800 z-10">
-                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <div className="w-full md:w-1/3 md:h-full bg-slate-800 border-t md:border-t-0 md:border-l border-slate-700 flex flex-col">
+                        <div className="p-4 md:p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800 z-10">
+                            <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                                 <MessageSquare className="text-mexi-pink" /> Discussion
                             </h3>
                             <span className="text-sm text-gray-400">{comments.length} comments</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                        <div className="md:flex-1 md:overflow-y-auto p-4 md:p-6 space-y-6 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
                             {commentsLoading ? (
                                 <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mexi-pink"></div></div>
                             ) : comments.length === 0 ? (
@@ -541,7 +599,7 @@ export default function EventCard({ event, position, visible, loading, error, on
     }
     return (
         <div 
-            className="fixed z-50 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-2xl p-4 w-80 text-white transition-opacity duration-300"
+            className={`fixed z-50 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl shadow-2xl p-4 text-white transition-opacity duration-300 ${isMobile ? 'w-[calc(100vw-2rem)] max-w-sm' : 'w-80'}`}
             style={miniCardStyle}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}

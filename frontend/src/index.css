@@ -32,3 +32,13 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-mexi-pink);
 }
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(0.9);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}

@@ -78,7 +78,19 @@ if (!$isValid) {
     if ($fileError === 0) {
         if ($fileSize < 50000000) { // 50MB limit
             $fileNameNew = uniqid('', true) . "." . $fileExt;
-            $uploadDir = __DIR__ . '/../public/uploads/';
+
+            $isProd = isset($_SERVER['HTTP_HOST']) &&
+                      (strpos($_SERVER['HTTP_HOST'], 'fwh.is') !== false
+                       || strpos($_SERVER['HTTP_HOST'], 'infinityfree') !== false);
+
+            if ($isProd) {
+                $uploadDir = __DIR__ . '/../uploads/';
+                $publicPath = '/uploads/';
+            } else {
+                $uploadDir = __DIR__ . '/../public/uploads/';
+                $publicPath = '/mexi-events/public/uploads/';
+            }
+
             if (!file_exists($uploadDir)) {
                 if (!mkdir($uploadDir, 0777, true)) {
                     http_response_code(500);
@@ -86,13 +98,13 @@ if (!$isValid) {
                     exit;
                 }
             }
-            
+
             $fileDestination = $uploadDir . $fileNameNew;
-            
+
             if (move_uploaded_file($fileTmpName, $fileDestination)) {
                 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
                 $host = $_SERVER['HTTP_HOST'];
-                $url = "$protocol://$host/mexi-events/public/uploads/$fileNameNew";
+                $url = "$protocol://$host$publicPath$fileNameNew";
                 
                 $responseType = 'image';
                 if (strpos($fileType, 'video') !== false || in_array($fileExt, ['mp4', 'webm'])) {
